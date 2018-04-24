@@ -11,7 +11,7 @@ Coming soon...
 ```python
 from tcex_utility import Util
 u = Util('testing-lab')
-u.create_from_semiositic_pattern('sig=doc=inc-file', 10)
+u.create_from_symbolic_pattern('sig=doc=inc-file', 10)
 u.finish()
 ```
 
