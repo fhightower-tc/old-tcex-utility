@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Utility for TCEX."""
+"""Basic, elemental functions for TCEX."""
 
 try:
     import ConfigParser
@@ -42,7 +42,7 @@ INDICATOR_TYPE_TO_ID_KEY = {
 API_VERSION = 'v2'
 
 
-class Util(object):
+class Elements(object):
     def __init__(self, owner=None):
         self.tcex = TcEx()
         self._authenticate()
@@ -64,7 +64,7 @@ class Util(object):
         }
         self.default_metadata = {}
         if owner is not None:
-            self.tcex.args.api_default_org = owner
+            self.owner = owner
         self.inflect_engine = inflect.engine()
 
     def _authenticate(self):
@@ -83,8 +83,8 @@ class Util(object):
         self.tcex.args.api_access_id = api_access_id
         self.tcex.args.api_secret_key = api_secret_key
         self.tcex.args.tc_api_path = api_base_url.rstrip('/')
-        if self.tcex.args.api_default_org is None:
-            self.tcex.args.api_default_org = api_default_org
+        if self.owner is None:
+            self.owner = api_default_org
 
     def _check_for_default_metdata(self, object_data, object_type):
         """See if there is metadata for objects of the given type and if so, add it to the object's data."""
@@ -160,24 +160,24 @@ class Util(object):
         elif indicator_type == 'Url':
             return base_indicator.format(host_base)
 
-    def _get_items(self, item_type):
+    def get_items(self, item_type):
         """Get all items of the given type."""
+        # TODO: singularize and title case the item_type so that 'address', 'Addresses', and 'Address' will all work
         item_data = self.tcex.resource(item_type)
-        item_data.owner = self.tcex.args.api_default_org
+        item_data.owner = self.owner
         items = list()
         # paginate over results
         for item in item_data:
             items.extend(item['data'])
         return items
 
-    def get_groups(self, group_type):
-        """Get all groups of the given type."""
-        return self._get_items(group_type)
+    # def get_groups(self, group_type):
+    #     """Get all groups of the given type."""
+    #     return self.get_items(group_type)
 
-    def get_indicators(self, indicator_type):
-        """Get all indicators of the given type."""
-        # TODO: singularize and title case the indicator_type so that 'address', 'Addresses', and 'Address' will all work
-        return self._get_items(indicator_type)
+    # def get_indicators(self, indicator_type):
+    #     """Get all indicators of the given type."""
+    #     return self.get_items(indicator_type)
 
     def _create_indicator(self, indicator_type, indicator=''):
         if indicator == '':
@@ -237,7 +237,7 @@ class Util(object):
         r = self.tcex.request_tc()
         r.url = '{}/{}/{}'.format(self.tcex.args.tc_api_path, API_VERSION, api_branch)
         r.add_header('Content-Type', 'application/json')
-        r.add_payload('owner', self.tcex.args.api_default_org)
+        r.add_payload('owner', self.owner)
         r.body = json.dumps(body)
         r.http_method = method
         response = r.send()
@@ -282,7 +282,7 @@ class Util(object):
 
     def set_owner(self, owner_name):
         """Set the owner for TCEX."""
-        self.tcex.args.api_default_org = owner_name
+        self.owner = owner_name
 
     def create_multiple_groups(self, count=100, base_name='Test Group', group_type='Incident'):
         """Create the number of groups specified by the count."""
@@ -337,4 +337,4 @@ class Util(object):
 
     def process(self):
         """Process all of the data."""
-        self.tcex.jobs.process(self.tcex.args.api_default_org)
+        self.tcex.jobs.process(self.owner)
