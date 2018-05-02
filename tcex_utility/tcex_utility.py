@@ -7,10 +7,12 @@ try:
 except:
     import configparser as ConfigParser
 import hashlib
+import json
 import random
 import sys
 import uuid
 
+import inflect
 from tcex import TcEx
 
 INDICATOR_BASE_TEMPLATES = {
@@ -20,6 +22,24 @@ INDICATOR_BASE_TEMPLATES = {
     'Host': '{}.com',
     'Url': 'https://{}.com/'
 }
+
+INDICATOR_WEBLINK_CLASSIFIER = {
+    '?address=': 'Address',
+    '?emailaddress=': 'EmailAddress',
+    '?file=': 'File',
+    '?host=': 'Host',
+    'url.xhtml': 'Url',
+}
+
+INDICATOR_TYPE_TO_ID_KEY = {
+    'Address': 'ip',
+    'EmailAddress': 'address',
+    'File': ['md5', 'sha1', 'sha256'],
+    'Host': 'hostName',
+    'Url': 'text'
+}
+
+API_VERSION = 'v2'
 
 
 class Util(object):
@@ -45,6 +65,7 @@ class Util(object):
         self.default_metadata = {}
         if owner is not None:
             self.tcex.args.api_default_org = owner
+        self.inflect_engine = inflect.engine()
 
     def _authenticate(self):
         config = ConfigParser.RawConfigParser()
@@ -61,7 +82,7 @@ class Util(object):
 
         self.tcex.args.api_access_id = api_access_id
         self.tcex.args.api_secret_key = api_secret_key
-        self.tcex.args.tc_api_path = api_base_url
+        self.tcex.args.tc_api_path = api_base_url.rstrip('/')
         if self.tcex.args.api_default_org is None:
             self.tcex.args.api_default_org = api_default_org
 
@@ -78,6 +99,8 @@ class Util(object):
                     object_data['tag'].extend(self.default_metadata[object_type].get('tag'))
                 else:
                     object_data['tag'] = self.default_metadata[object_type].get('tag')
+            if self.default_metadata[object_type].get('eventDate'):
+                object_data['eventDate'] = self.default_metadata[object_type].get('eventDate')
         return object_data
 
     def _create_group(self, group_type, group_name=''):
@@ -99,6 +122,28 @@ class Util(object):
         self.tcex.jobs.group(group_data)
         return group_data
 
+    def _get_indicator_id_key(self, indicator_type):
+        """Return the key which provides the indicator's id for the given indicator type."""
+        if isinstance(INDICATOR_TYPE_TO_ID_KEY[indicator_type], list):
+            return INDICATOR_TYPE_TO_ID_KEY[indicator_type]
+        else:
+            return [INDICATOR_TYPE_TO_ID_KEY[indicator_type]]
+
+    def _get_api_base_from_type(self, base_type, item_type):
+        """Return the base API path for the given type."""
+        return '{}/{}'.format(base_type, self.inflect_engine.plural(item_type.lower()))
+
+    def _get_api_details(self, item_type):
+        """Return the base API path and the key which provides the item's id."""
+        if self._identify_group(item_type):
+            item_api_base = self._get_api_base_from_type('groups', item_type)
+            item_id_keys = ['id']
+        elif self._identify_indicator(item_type):
+            item_api_base = self._get_api_base_from_type('indicators', item_type)
+            item_id_keys = self._get_indicator_id_key(item_type)
+
+        return item_api_base, item_id_keys
+
     def _generate_test_indicator(self, indicator_type):
         """Create a test indicator of the given type."""
         host_base = str(uuid.uuid4()).split('-')[0]
@@ -114,6 +159,25 @@ class Util(object):
             return base_indicator.format(host_base)
         elif indicator_type == 'Url':
             return base_indicator.format(host_base)
+
+    def _get_items(self, item_type):
+        """Get all items of the given type."""
+        item_data = self.tcex.resource(item_type)
+        item_data.owner = self.tcex.args.api_default_org
+        items = list()
+        # paginate over results
+        for item in item_data:
+            items.extend(item['data'])
+        return items
+
+    def get_groups(self, group_type):
+        """Get all groups of the given type."""
+        return self._get_items(group_type)
+
+    def get_indicators(self, indicator_type):
+        """Get all indicators of the given type."""
+        # TODO: singularize and title case the indicator_type so that 'address', 'Addresses', and 'Address' will all work
+        return self._get_items(indicator_type)
 
     def _create_indicator(self, indicator_type, indicator=''):
         if indicator == '':
@@ -168,6 +232,49 @@ class Util(object):
                 })
             # TODO: handle file occurrence associations
 
+    def _api_request(self, api_branch, body, method='POST'):
+        """Make an api request."""
+        r = self.tcex.request_tc()
+        r.url = '{}/{}/{}'.format(self.tcex.args.tc_api_path, API_VERSION, api_branch)
+        r.add_header('Content-Type', 'application/json')
+        r.add_payload('owner', self.tcex.args.api_default_org)
+        r.body = json.dumps(body)
+        r.http_method = method
+        response = r.send()
+        # TODO: add some error handling here
+        return response
+
+    def _get_iso_date_format(self, date):
+        """Return the iso format (with a trailing 'Z') of the given date."""
+        return self.tcex.utils.format_datetime(date, date_format='%Y-%m-%dT%H:%M:%S') + 'Z'
+
+    def _set_event_date(self, event_date, incident_id):
+        """Set the event date for the incident with the given id."""
+        request_body = {
+            'eventDate': self._get_iso_date_format(event_date)
+        }
+        self._api_request('groups/incidents/{}'.format(incident_id), request_body, 'PUT')
+
+    def _identify_item_type(self, search_type, item_types):
+        """Look for the search_type in the given item_types."""
+        if search_type in item_types.keys() or search_type in item_types.values():
+            return True
+        else:
+            return False
+
+    def _identify_group(self, item_type):
+        """See if the item_type is a group."""
+        return self._identify_item_type(item_type, self.group_abbreviations)
+
+    def _identify_indicator(self, item_type):
+        """See if the item_type is an indicator."""
+        return self._identify_item_type(item_type, self.indicator_abbreviations)
+
+    def _add_attributes(self, attributes, item_api_base, item_id):
+        """Add the attributes to the given item."""
+        for attribute in attributes:
+            self._api_request('{}/{}/attributes'.format(item_api_base, item_id), attribute)
+
     def add_default_metadata(self, metadata, object_type):
         """Add metadata which will be added to all objects of the given type."""
         # TODO: add validation to make sure the object_type is valid
@@ -211,6 +318,23 @@ class Util(object):
                     if associations[i] == '=':
                         self._create_association(created_objects[i], created_objects[i + 2])
 
-    def finish(self):
-        """Finish and process all of the data."""
+    def set_event_dates(self, event_date, incidents=None):
+        """Set the event dates for the given incidents."""
+        if incidents is None:
+            incidents = self.get_groups('Incident')
+
+        for incident in incidents:
+            self._set_event_date(event_date, incident['id'])
+
+    def add_attributes(self, attributes, items, item_type):
+        """Add attributes to the given items."""
+        item_api_base, item_id_keys = self._get_api_details(item_type)
+
+        for item in items:
+            for item_id_key in item_id_keys:
+                if item.get(item_id_key):
+                    self._add_attributes(attributes, item_api_base, item[item_id_key])
+
+    def process(self):
+        """Process all of the data."""
         self.tcex.jobs.process(self.tcex.args.api_default_org)
