@@ -133,16 +133,25 @@ class Elements(object):
         """Return the base API path for the given type."""
         return '{}/{}'.format(base_type, self.inflect_engine.plural(item_type.lower()))
 
-    def _get_api_details(self, item_type):
+    def _get_api_details(self, item, item_type):
         """Return the base API path and the key which provides the item's id."""
+        item_api_base = str()
+        item_id_key = str()
+
         if self._identify_group(item_type):
             item_api_base = self._get_api_base_from_type('groups', item_type)
-            item_id_keys = ['id']
+            item_id_keys = 'id'
         elif self._identify_indicator(item_type):
             item_api_base = self._get_api_base_from_type('indicators', item_type)
             item_id_keys = self._get_indicator_id_key(item_type)
+            for key in item_id_keys:
+                if item.get(key):
+                    item_id_key = key
+                    break
+        else:
+            print('Unable to identify the type {}'.format(item_type))
 
-        return item_api_base, item_id_keys
+        return item_api_base, item_id_key
 
     def _generate_test_indicator(self, indicator_type):
         """Create a test indicator of the given type."""
@@ -159,6 +168,20 @@ class Elements(object):
             return base_indicator.format(host_base)
         elif indicator_type == 'Url':
             return base_indicator.format(host_base)
+
+    def get_attributes(self, item, item_type):
+        """Get all attributes for the given item."""
+        item_api_base, item_id_keys = self._get_api_details(item, item_type)
+        api_path = '{}/{}/attributes'.format(item_api_base, item[item_id_keys])
+        results = self._api_request('GET', api_path)
+        return results['attribute']
+
+    def delete_attributes(self, item, item_type, attribute_id):
+        """Get all attributes for the given item."""
+        item_api_base, item_id_keys = self._get_api_details(item, item_type)
+        api_path = '{}/{}/attributes/{}'.format(item_api_base, item[item_id_keys], attribute_id)
+        results = self._api_request('DELETE', api_path)
+        return results
 
     def get_items(self, item_type):
         """Get all items of the given type."""
@@ -232,17 +255,25 @@ class Elements(object):
                 })
             # TODO: handle file occurrence associations
 
-    def _api_request(self, api_branch, body, method='POST'):
+    def _api_request(self, method, api_path, body={}, includeAttributes=False, includeTags=False):
         """Make an api request."""
         r = self.tcex.request_tc()
-        r.url = '{}/{}/{}'.format(self.tcex.args.tc_api_path, API_VERSION, api_branch)
+        r.url = '{}/{}/{}'.format(self.tcex.args.tc_api_path, API_VERSION, api_path)
         r.add_header('Content-Type', 'application/json')
         r.add_payload('owner', self.owner)
-        r.body = json.dumps(body)
+        if includeAttributes:
+            r.add_payload('includeAttributes', 'true')
+        if includeTags:
+            r.add_payload('includeTags', 'true')
+        if method != 'GET':
+            r.body = json.dumps(body)
         r.http_method = method
         response = r.send()
         # TODO: add some error handling here
-        return response
+        if response.json().get('data'):
+            return response.json()['data']
+        else:
+            return response.json()
 
     def _get_iso_date_format(self, date):
         """Return the iso format (with a trailing 'Z') of the given date."""
@@ -253,7 +284,7 @@ class Elements(object):
         request_body = {
             'eventDate': self._get_iso_date_format(event_date)
         }
-        self._api_request('groups/incidents/{}'.format(incident_id), request_body, 'PUT')
+        self._api_request('PUT', 'groups/incidents/{}'.format(incident_id), request_body)
 
     def _identify_item_type(self, search_type, item_types):
         """Look for the search_type in the given item_types."""
@@ -270,10 +301,10 @@ class Elements(object):
         """See if the item_type is an indicator."""
         return self._identify_item_type(item_type, self.indicator_abbreviations)
 
-    def _add_attributes(self, attributes, item_api_base, item_id):
+    def _add_attributes(self, item_api_base, item_id, attributes):
         """Add the attributes to the given item."""
         for attribute in attributes:
-            self._api_request('{}/{}/attributes'.format(item_api_base, item_id), attribute)
+            self._api_request('POST', '{}/{}/attributes'.format(item_api_base, item_id), attribute)
 
     def add_default_metadata(self, metadata, object_type):
         """Add metadata which will be added to all objects of the given type."""
@@ -326,14 +357,11 @@ class Elements(object):
         for incident in incidents:
             self._set_event_date(event_date, incident['id'])
 
-    def add_attributes(self, attributes, items, item_type):
+    def add_attributes(self, items, item_type, attributes):
         """Add attributes to the given items."""
-        item_api_base, item_id_keys = self._get_api_details(item_type)
-
         for item in items:
-            for item_id_key in item_id_keys:
-                if item.get(item_id_key):
-                    self._add_attributes(attributes, item_api_base, item[item_id_key])
+            item_api_base, item_id_key = self._get_api_details(item, item_type)
+            self._add_attributes(item_api_base, item[item_id_key], attributes)
 
     def process(self):
         """Process all of the data."""
