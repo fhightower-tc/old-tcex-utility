@@ -44,6 +44,7 @@ API_VERSION = 'v2'
 
 class Elements(object):
     def __init__(self, owner=None):
+        self.owner = owner
         self.tcex = TcEx()
         self._authenticate()
         self.group_abbreviations = {
@@ -63,8 +64,6 @@ class Elements(object):
             'url': 'Url'
         }
         self.default_metadata = {}
-        if owner is not None:
-            self.owner = owner
         self.inflect_engine = inflect.engine()
 
     def _authenticate(self):
@@ -347,6 +346,7 @@ class Elements(object):
             self._create_group(group_type, group_name=base_name + ' {}'.format(x))
 
     def create_from_symbolic_pattern(self, pattern, count=1):
+        # TODO: move this function to the molecules file
         """Create groups represented symbolically."""
         associations = list()
         objects = list()

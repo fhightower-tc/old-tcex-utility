@@ -15,8 +15,8 @@ This example will create the following objects 10 times:
 A signature, document, incident, and file. The signature will be associated with the document and the incident. The document will be associated with the incident and the file. The incident will be associated with the file.
 
 ```python
-from tcex_utility import Util
-u = Util('testing-lab')
+from tcex_elements import Elements
+u = Elements('testing-lab')
 u.create_from_symbolic_pattern('sig=doc=inc-file', 10)
 u.process()
 ```
@@ -24,8 +24,8 @@ u.process()
 ### Get Indicators by Type
 
 ```python
-from tcex_utility import Util
-u = Util('testing-lab')
+from tcex_elements import Elements
+u = Elements('testing-lab')
 a = u.get_indicators('Address')
 print(len(a))
 ```
