@@ -21,13 +21,37 @@ u.create_from_symbolic_pattern('sig=doc=inc-file', 10)
 u.process()
 ```
 
-### Retrieving Indicators
+### Get Indicators by Type
 
 ```python
 from tcex_utility import Util
 u = Util('testing-lab')
 a = u.get_indicators('Address')
 print(len(a))
+```
+
+### Get Items with a Given Attribute
+
+```python
+from tcex_molecules import Molecules
+u = Molecules('testing-lab')
+a = u.get_items_by_attribute({"type": "Description", "value": "this is just a test"}, 'Address')
+```
+
+### Add Attribute to Items with a Given Attribute
+
+```python
+from tcex_molecules import Molecules
+u = Molecules('testing-lab')
+a = u.add_attributes_to_items_by_attribute([{"type": "Description", "value": "New attribute"}], 'Address', {"type": "Description", "value": "this is just a test"})
+```
+
+### Add Attributes to Items with a Given Tag
+
+```python
+from tcex_molecules import Molecules
+u = Molecules('testing-lab')
+a = u.add_attributes_to_items_by_tag([{"type": "Description", "value": "this is just a test"}], 'Address', 'Test Tag')
 ```
 
 ## Credits

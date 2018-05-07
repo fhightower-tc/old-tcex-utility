@@ -171,15 +171,15 @@ class Elements(object):
 
     def get_attributes(self, item, item_type):
         """Get all attributes for the given item."""
-        item_api_base, item_id_keys = self._get_api_details(item, item_type)
-        api_path = '{}/{}/attributes'.format(item_api_base, item[item_id_keys])
+        item_api_base, item_id_key = self._get_api_details(item, item_type)
+        api_path = '{}/{}/attributes'.format(item_api_base, item[item_id_key])
         results = self._api_request('GET', api_path)
         return results['attribute']
 
     def delete_attributes(self, item, item_type, attribute_id):
         """Get all attributes for the given item."""
-        item_api_base, item_id_keys = self._get_api_details(item, item_type)
-        api_path = '{}/{}/attributes/{}'.format(item_api_base, item[item_id_keys], attribute_id)
+        item_api_base, item_id_key = self._get_api_details(item, item_type)
+        api_path = '{}/{}/attributes/{}'.format(item_api_base, item[item_id_key], attribute_id)
         results = self._api_request('DELETE', api_path)
         return results
 
@@ -194,13 +194,36 @@ class Elements(object):
             items.extend(item['data'])
         return items
 
-    # def get_groups(self, group_type):
-    #     """Get all groups of the given type."""
-    #     return self.get_items(group_type)
+    def get_items_by_attribute(self, item_attribute, item_type):
+        """Find all items with the given tag."""
+        item_api_base, item_id_key = self._get_api_details({}, item_type)
+        results = self._api_request('GET', item_api_base, includeAttributes=True)
+        results = results.get(item_type.lower())
+        items = list()
 
-    # def get_indicators(self, indicator_type):
-    #     """Get all indicators of the given type."""
-    #     return self.get_items(indicator_type)
+        for result in results:
+            if result.get('attribute'):
+                for existing_attribute in result['attribute']:
+                    if item_attribute['type'] == existing_attribute['type']:
+                        if item_attribute.get('value'):
+                            if item_attribute['value'] == existing_attribute['value']:
+                                items.append(result)
+                        else:
+                            items.append(result)
+        return items
+
+    def get_items_by_tag(self, item_tag, item_type):
+        """Find all items with the given tag."""
+        item_api_base, item_id_key = self._get_api_details({}, item_type)
+        results = self._api_request('GET', item_api_base, includeTags=True)
+        results = results.get(item_type.lower())
+        items = list()
+
+        for result in results:
+            if result.get('tag'):
+                if item_tag in [tag['name'] for tag in result['tag']]:
+                    items.append(result)
+        return items
 
     def _create_indicator(self, indicator_type, indicator=''):
         if indicator == '':
@@ -269,11 +292,14 @@ class Elements(object):
             r.body = json.dumps(body)
         r.http_method = method
         response = r.send()
-        # TODO: add some error handling here
-        if response.json().get('data'):
-            return response.json()['data']
+
+        if response.ok:
+            if response.json().get('data'):
+                return response.json()['data']
+            else:
+                return response.json()
         else:
-            return response.json()
+            raise RuntimeError('{} response from API: {}'.format(response.status_code, response.text))
 
     def _get_iso_date_format(self, date):
         """Return the iso format (with a trailing 'Z') of the given date."""
@@ -357,7 +383,7 @@ class Elements(object):
         for incident in incidents:
             self._set_event_date(event_date, incident['id'])
 
-    def add_attributes(self, items, item_type, attributes):
+    def add_attributes(self, attributes, items, item_type):
         """Add attributes to the given items."""
         for item in items:
             item_api_base, item_id_key = self._get_api_details(item, item_type)

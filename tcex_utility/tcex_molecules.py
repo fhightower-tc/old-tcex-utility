@@ -10,9 +10,19 @@ class Molecules(Elements):
         self.owner = owner
         super(Molecules, self).__init__()
 
-    def add_attributes_to_all_items_of_type(self, attributes, item_type):
+    def add_attributes_to_items_by_type(self, attributes, item_type):
         """Add the given attributes to all items of the given type."""
         items = self.get_items(item_type)
+        self.add_attributes(attributes, items, item_type)
+
+    def add_attributes_to_items_by_attribute(self, new_attributes, item_type, item_attribute):
+        """Add the given attributes to all items of the given type."""
+        items = self.get_items_by_attribute(item_attribute, item_type)
+        self.add_attributes(new_attributes, items, item_type)
+
+    def add_attributes_to_items_by_tag(self, attributes, item_type, item_tag):
+        """Add the given attributes to all items of the given type."""
+        items = self.get_items_by_tag(item_tag, item_type)
         self.add_attributes(attributes, items, item_type)
 
     def update_attributes_on_items(self, old_attribute, new_attribute, items, items_type):
