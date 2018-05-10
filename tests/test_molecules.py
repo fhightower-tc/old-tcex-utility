@@ -36,6 +36,20 @@ def test_get_items_by_tag():
     assert len(items) > 0
 
 
+def test_get_all_indicators_by_tag():
+    m = Molecules(OWNER)
+    addresses = m.get_items_by_tag('Test', 'Address')
+    indicators = m.get_items_by_tag('Test', 'Indicators')
+    assert len(indicators) > len(addresses)
+
+
+def test_get_all_groups_by_tag():
+    m = Molecules(OWNER)
+    incidents = m.get_items_by_tag('Test', 'Incident')
+    groups = m.get_items_by_tag('Test', 'Groups')
+    assert len(groups) > len(incidents)
+
+
 def test_update_attributes_on_items():
     pass
     # TODO: implement

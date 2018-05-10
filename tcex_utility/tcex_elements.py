@@ -24,6 +24,21 @@ INDICATOR_BASE_TEMPLATES = {
     'Url': 'https://{}.com/'
 }
 
+ITEM_TYPE_TO_API_BRANCH = {
+    'Address': 'addresses',
+    'EmailAddress': 'emailAddresses',
+    'File': 'files',
+    'Host': 'hosts',
+    'Url': 'urls',
+    'Adversary': 'adversaries',
+    'Campaign': 'campaigns',
+    'Document': 'documents',
+    'Email': 'emails',
+    'Incident': 'incidents',
+    'Signature': 'signatures',
+    'Threat': 'threats'
+}
+
 INDICATOR_WEBLINK_CLASSIFIER = {
     '?address=': 'Address',
     '?emailaddress=': 'EmailAddress',
@@ -135,7 +150,7 @@ class Elements(object):
 
     def _get_api_base_from_type(self, base_type, item_type):
         """Return the base API path for the given type."""
-        return '{}/{}'.format(base_type, self.inflect_engine.plural(item_type.lower()))
+        return '{}/{}'.format(base_type, ITEM_TYPE_TO_API_BRANCH[item_type])
 
     def _get_api_details(self, item, item_type):
         """Return the base API path and the key which provides the item's id."""
@@ -201,9 +216,18 @@ class Elements(object):
             return items
         # if we want to get attributes and/or tags, make an API request
         else:
-            item_api_base, item_id_key = self._get_api_details({}, item_type)
-            results = self._api_request('GET', item_api_base, includeAttributes=includeAttributes, includeTags=includeTags)
-            items = results.get(item_type.lower())
+            if item_type.lower() == 'indicators':
+                for indicator_type in INDICATOR_BASE_TEMPLATES:
+                    items.extend(self.get_items(indicator_type, includeAttributes=includeAttributes, includeTags=includeTags))
+                    return items
+            elif item_type.lower() == 'groups':
+                for group_type in self.tcex.group_types:
+                    items.extend(self.get_items(group_type, includeAttributes=includeAttributes, includeTags=includeTags))
+                    return items
+            else:
+                item_api_base, item_id_key = self._get_api_details({}, item_type)
+                results = self._api_request('GET', item_api_base, includeAttributes=includeAttributes, includeTags=includeTags)
+                items = results.get(self.inflect_engine.singular_noun(ITEM_TYPE_TO_API_BRANCH[item_type]))
             return items
 
     def get_sec_labels(self, item, item_type):
