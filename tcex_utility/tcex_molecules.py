@@ -162,6 +162,8 @@ class Molecules(Elements):
                         self.add_attributes([item], items_type, [new_attribute])
                         break
 
-    def replace_tag(old_tag, new_tag, item_type=None):
-        """Replace all items tagged with the old_tag with the new_tag and remove the old_tag."""
+    def replace_tag(self, old_tag, new_tags, item_type=None):
+        """Replace all items tagged with the old_tag with the new_tags and remove the old_tag."""
         items = self.get_items_by_tag(old_tag, item_type)
+        self.add_tags(new_tags, items)
+        self.delete_tags([old_tag], items)

@@ -169,7 +169,7 @@ class Elements(object):
 
         if self._identify_group(item_type):
             item_api_base = self._get_api_base_from_type('groups', item_type)
-            item_id_keys = 'id'
+            item_id_key = 'id'
         elif self._identify_indicator(item_type):
             item_api_base = self._get_api_base_from_type('indicators', item_type)
             item_id_keys = self._get_indicator_id_key(item_type)
@@ -198,17 +198,16 @@ class Elements(object):
         elif indicator_type == 'Url':
             return base_indicator.format(host_base)
 
-    def get_attributes(self, item):
-        """Get all attributes for the given item."""
-        item_api_base, item_id_key = self._get_api_details(item)
-        api_path = '{}/{}/attributes'.format(item_api_base, item[item_id_key])
-        results = self._api_request('GET', api_path)
-        return results['attribute']
-
-    def delete_attributes(self, item, attribute_id):
+    def delete_attribute(self, item, attribute_id):
         """Get all attributes for the given item."""
         item_api_base, item_id_key = self._get_api_details(item)
         api_path = '{}/{}/attributes/{}'.format(item_api_base, item[item_id_key], attribute_id)
+        results = self._api_request('DELETE', api_path)
+        return results
+
+    def delete_tag(self, item, tag):
+        item_api_base, item_id_key = self._get_api_details(item)
+        api_path = '{}/{}/tags/{}'.format(item_api_base, item[item_id_key], tag)
         results = self._api_request('DELETE', api_path)
         return results
 
@@ -228,7 +227,7 @@ class Elements(object):
             return items
         # if we want to get attributes and/or tags, make an API request
         else:
-            if item_type.lower() == 'all' or item_type is None:
+            if item_type is None or item_type.lower() == 'all':
                 # get all indicators
                 items.extend(self.get_items('indicators', includeAttributes=includeAttributes, includeTags=includeTags))
                 # get all groups
@@ -312,6 +311,7 @@ class Elements(object):
         r.url = '{}/{}/{}'.format(self.tcex.args.tc_api_path, API_VERSION, api_path)
         r.add_header('Content-Type', 'application/json')
         r.add_payload('owner', self.owner)
+        r.add_payload('resultLimit', 10000)
         if includeAttributes:
             r.add_payload('includeAttributes', 'true')
         if includeTags:
@@ -440,6 +440,11 @@ class Elements(object):
         for item in items:
             item_api_base, item_id_key = self._get_api_details(item)
             self._add_tags(item_api_base, item[item_id_key], tags)
+
+    def delete_tags(self, tags, items):
+        for item in items:
+            for tag in tags:
+                self.delete_tag(item, tag)
 
     def process(self):
         """Process all of the data."""

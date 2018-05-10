@@ -50,6 +50,45 @@ def test_get_all_groups_by_tag():
     assert len(groups) > len(incidents)
 
 
+def test_replace_tag_on_one_type():
+    m = Molecules(OWNER)
+    old_tag = 'Test'
+    new_tags = ['New Tag']
+
+    addresses = m.get_items_by_tag(old_tag, 'address')
+    original_length = len(addresses)
+    assert original_length > 0
+
+    m.replace_tag(old_tag, new_tags, 'address')
+
+    addresses = m.get_items_by_tag(old_tag, 'address')
+    assert len(addresses) == 0
+    addresses = m.get_items_by_tag(new_tags[0], 'address')
+    assert len(addresses) == original_length
+
+    m.replace_tag(new_tags[0], [old_tag], 'address')
+
+
+def test_replace_tag():
+    m = Molecules(OWNER)
+    old_tag = 'Test'
+    new_tags = ['New Tag']
+
+    items = m.get_items_by_tag(old_tag)
+    original_length = len(items)
+    assert original_length > 0
+
+    m.replace_tag(old_tag, new_tags)
+
+    items = m.get_items_by_tag(old_tag)
+    assert len(items) == 0
+    items = m.get_items_by_tag(new_tags[0])
+    assert len(items) == original_length
+
+    # reset the tags
+    m.replace_tag(new_tags[0], [old_tag])
+
+
 def test_update_attributes_on_items():
     pass
     # TODO: implement
