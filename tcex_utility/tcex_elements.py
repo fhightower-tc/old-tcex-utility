@@ -187,65 +187,29 @@ class Elements(object):
         results = self._api_request('DELETE', api_path)
         return results
 
-    def get_items(self, item_type):
+    def get_items(self, item_type, includeAttributes=False, includeTags=False):
         """Get all items of the given type."""
-        # TODO: singularize and title case the item_type so that 'address', 'Addresses', and 'Address' will all work
-        item_data = self.tcex.resource(item_type)
-        item_data.owner = self.owner
         items = list()
-        # paginate over results
-        for item in item_data:
-            items.extend(item['data'])
-        return items
+        # if there is no reason to make an API call, just use the tcex.resource library
+        if not includeAttributes and not includeTags:
+            # TODO: singularize and title case the item_type so that 'address', 'Addresses', and 'Address' will all work
+            item_data = self.tcex.resource(item_type)
+            item_data.owner = self.owner
+            # paginate over results
+            for item in item_data:
+                items.extend(item['data'])
+            return items
+        # if we want to get attributes and/or tags, make an API request
+        else:
+            item_api_base, item_id_key = self._get_api_details({}, item_type)
+            results = self._api_request('GET', item_api_base, includeAttributes=includeAttributes, includeTags=includeTags)
+            items = results.get(item_type.lower())
+            return items
 
-    def get_items_by_attribute(self, item_attribute, item_type):
-        """Find all items with the given tag."""
-        item_api_base, item_id_key = self._get_api_details({}, item_type)
-        results = self._api_request('GET', item_api_base, includeAttributes=True)
-        results = results.get(item_type.lower())
-        items = list()
-
-        for result in results:
-            if result.get('attribute'):
-                for existing_attribute in result['attribute']:
-                    if item_attribute['type'] == existing_attribute['type']:
-                        if item_attribute.get('value'):
-                            if item_attribute['value'] == existing_attribute['value']:
-                                items.append(result)
-                        else:
-                            items.append(result)
-        return items
-
-    def _get_sec_labels(self, item, item_type):
+    def get_sec_labels(self, item, item_type):
         """Get security labels for the given item."""
         item_api_base, item_id_key = self._get_api_details(item, item_type)
         return self._api_request('GET', '{}/{}/securityLabels'.format(item_api_base, item[item_id_key]))
-
-    def get_items_by_sec_label(self, item_sec_label, item_type):
-        """Find all items with the given security label."""
-        item_api_base, item_id_key = self._get_api_details({}, item_type)
-        results = self._api_request('GET', item_api_base)
-        results = results.get(item_type.lower())
-        items = list()
-
-        for result in results:
-            sec_labels = [sec_label['name'] for sec_label in self._get_sec_labels(result, item_type)['securityLabel']]
-            if item_sec_label in sec_labels:
-                items.append(result)
-        return items
-
-    def get_items_by_tag(self, item_tag, item_type):
-        """Find all items with the given tag."""
-        item_api_base, item_id_key = self._get_api_details({}, item_type)
-        results = self._api_request('GET', item_api_base, includeTags=True)
-        results = results.get(item_type.lower())
-        items = list()
-
-        for result in results:
-            if result.get('tag'):
-                if item_tag in [tag['name'] for tag in result['tag']]:
-                    items.append(result)
-        return items
 
     def _create_indicator(self, indicator_type, indicator=''):
         if indicator == '':
