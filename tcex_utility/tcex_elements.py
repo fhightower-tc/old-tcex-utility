@@ -10,6 +10,7 @@ import hashlib
 import json
 import os
 import random
+import re
 import sys
 import uuid
 
@@ -17,26 +18,26 @@ import inflect
 from tcex import TcEx
 
 INDICATOR_BASE_TEMPLATES = {
-    'Address': '1.2.{}.{}',
-    'EmailAddress': '{}@example.com',
-    'File': '{}',
-    'Host': '{}.com',
-    'Url': 'https://{}.com/'
+    'address': '1.2.{}.{}',
+    'emailaddress': '{}@example.com',
+    'file': '{}',
+    'host': '{}.com',
+    'url': 'https://{}.com/'
 }
 
 ITEM_TYPE_TO_API_BRANCH = {
-    'Address': 'addresses',
-    'EmailAddress': 'emailAddresses',
-    'File': 'files',
-    'Host': 'hosts',
-    'Url': 'urls',
-    'Adversary': 'adversaries',
-    'Campaign': 'campaigns',
-    'Document': 'documents',
-    'Email': 'emails',
-    'Incident': 'incidents',
-    'Signature': 'signatures',
-    'Threat': 'threats'
+    'address': 'addresses',
+    'emailaddress': 'emailAddresses',
+    'file': 'files',
+    'host': 'hosts',
+    'url': 'urls',
+    'adversary': 'adversaries',
+    'campaign': 'campaigns',
+    'document': 'documents',
+    'email': 'emails',
+    'incident': 'incidents',
+    'signature': 'signatures',
+    'threat': 'threats'
 }
 
 INDICATOR_WEBLINK_CLASSIFIER = {
@@ -44,15 +45,33 @@ INDICATOR_WEBLINK_CLASSIFIER = {
     '?emailaddress=': 'EmailAddress',
     '?file=': 'File',
     '?host=': 'Host',
-    'url.xhtml': 'Url',
+    'url.xhtml': 'Url'
 }
 
 INDICATOR_TYPE_TO_ID_KEY = {
-    'Address': 'ip',
-    'EmailAddress': 'address',
-    'File': ['md5', 'sha1', 'sha256'],
-    'Host': 'hostName',
-    'Url': 'text'
+    'address': 'ip',
+    'emailaddress': 'address',
+    'file': ['md5', 'sha1', 'sha256'],
+    'host': 'hostName',
+    'url': 'text'
+}
+
+GROUP_ABBREVIATIONS = {
+    'adv': 'adversary',
+    'cam': 'campaign',
+    'doc': 'document',
+    'ema': 'email',
+    'inc': 'incident',
+    'sig': 'signature',
+    'thr': 'threat'
+}
+
+INDICATOR_ABBREVIATIONS = {
+    'add': 'address',
+    'emadd': 'emailaddress',
+    'file': 'file',
+    'host': 'host',
+    'url': 'url'
 }
 
 API_VERSION = 'v2'
@@ -63,22 +82,6 @@ class Elements(object):
         self.owner = owner
         self.tcex = TcEx()
         self._authenticate()
-        self.group_abbreviations = {
-            'adv': 'Adversary',
-            'cam': 'Campaign',
-            'doc': 'Document',
-            'ema': 'Email',
-            'inc': 'Incident',
-            'sig': 'Signature',
-            'thr': 'Threat'
-        }
-        self.indicator_abbreviations = {
-            'add': 'Address',
-            'emadd': 'EmailAddress',
-            'file': 'File',
-            'host': 'Host',
-            'url': 'Url'
-        }
         self.default_metadata = {}
         self.inflect_engine = inflect.engine()
 
@@ -152,10 +155,17 @@ class Elements(object):
         """Return the base API path for the given type."""
         return '{}/{}'.format(base_type, ITEM_TYPE_TO_API_BRANCH[item_type])
 
-    def _get_api_details(self, item, item_type):
+    def _get_type_from_weblink(self, weblink):
+        """Get the item's type from a weblink."""
+        pattern = '\/([a-z]*)\.xhtml'
+        matches = re.findall(pattern, weblink.lower())
+        return matches[0]
+
+    def _get_api_details(self, item):
         """Return the base API path and the key which provides the item's id."""
         item_api_base = str()
         item_id_key = str()
+        item_type = self._get_type_from_weblink(item['webLink'])
 
         if self._identify_group(item_type):
             item_api_base = self._get_api_base_from_type('groups', item_type)
@@ -188,26 +198,28 @@ class Elements(object):
         elif indicator_type == 'Url':
             return base_indicator.format(host_base)
 
-    def get_attributes(self, item, item_type):
+    def get_attributes(self, item):
         """Get all attributes for the given item."""
-        item_api_base, item_id_key = self._get_api_details(item, item_type)
+        item_api_base, item_id_key = self._get_api_details(item)
         api_path = '{}/{}/attributes'.format(item_api_base, item[item_id_key])
         results = self._api_request('GET', api_path)
         return results['attribute']
 
-    def delete_attributes(self, item, item_type, attribute_id):
+    def delete_attributes(self, item, attribute_id):
         """Get all attributes for the given item."""
-        item_api_base, item_id_key = self._get_api_details(item, item_type)
+        item_api_base, item_id_key = self._get_api_details(item)
         api_path = '{}/{}/attributes/{}'.format(item_api_base, item[item_id_key], attribute_id)
         results = self._api_request('DELETE', api_path)
         return results
 
-    def get_items(self, item_type, includeAttributes=False, includeTags=False):
+    def get_items(self, item_type=None, includeAttributes=False, includeTags=False):
         """Get all items of the given type."""
         items = list()
         # if there is no reason to make an API call, just use the tcex.resource library
         if not includeAttributes and not includeTags:
-            # TODO: singularize and title case the item_type so that 'address', 'Addresses', and 'Address' will all work
+            item_type = self.inflect_engine.singular_noun(ITEM_TYPE_TO_API_BRANCH[item_type])
+            # make sure the first character in the type is uppercased (so that it will work with TCEX)
+            item_type = item_type[0].title() + item_type[1:]
             item_data = self.tcex.resource(item_type)
             item_data.owner = self.owner
             # paginate over results
@@ -216,23 +228,29 @@ class Elements(object):
             return items
         # if we want to get attributes and/or tags, make an API request
         else:
-            if item_type.lower() == 'indicators':
-                for indicator_type in INDICATOR_BASE_TEMPLATES:
+            if item_type.lower() == 'all' or item_type is None:
+                # get all indicators
+                items.extend(self.get_items('indicators', includeAttributes=includeAttributes, includeTags=includeTags))
+                # get all groups
+                items.extend(self.get_items('groups', includeAttributes=includeAttributes, includeTags=includeTags))
+                return items
+            elif item_type.lower() == 'indicators':
+                for indicator_type in INDICATOR_ABBREVIATIONS.values():
                     items.extend(self.get_items(indicator_type, includeAttributes=includeAttributes, includeTags=includeTags))
-                    return items
+                return items
             elif item_type.lower() == 'groups':
-                for group_type in self.tcex.group_types:
+                for group_type in GROUP_ABBREVIATIONS.values():
                     items.extend(self.get_items(group_type, includeAttributes=includeAttributes, includeTags=includeTags))
-                    return items
+                return items
             else:
-                item_api_base, item_id_key = self._get_api_details({}, item_type)
+                item_api_base, item_id_key = self._get_api_details({'webLink': '/{}.xhtml'.format(item_type)})
                 results = self._api_request('GET', item_api_base, includeAttributes=includeAttributes, includeTags=includeTags)
                 items = results.get(self.inflect_engine.singular_noun(ITEM_TYPE_TO_API_BRANCH[item_type]))
             return items
 
-    def get_sec_labels(self, item, item_type):
+    def get_sec_labels(self, item):
         """Get security labels for the given item."""
-        item_api_base, item_id_key = self._get_api_details(item, item_type)
+        item_api_base, item_id_key = self._get_api_details(item)
         return self._api_request('GET', '{}/{}/securityLabels'.format(item_api_base, item[item_id_key]))
 
     def _create_indicator(self, indicator_type, indicator=''):
@@ -250,9 +268,9 @@ class Elements(object):
 
     def _create_association(self, object1, object2, custom_association_name=''):
         """Create an association between the two objects."""
-        if object1['type'] in self.group_abbreviations.values():
+        if object1['type'] in GROUP_ABBREVIATIONS.values():
             # group to group association
-            if object2['type'] in self.group_abbreviations.values():
+            if object2['type'] in GROUP_ABBREVIATIONS.values():
                 self.tcex.jobs.association({
                     "association_value": object1['name'],
                     "association_type": object1['type'],
@@ -269,7 +287,7 @@ class Elements(object):
                 })
         else:
             # indicator to group association
-            if object2['type'] in self.group_abbreviations.values():
+            if object2['type'] in GROUP_ABBREVIATIONS.values():
                 self.tcex.jobs.group_association({
                     "group_name": object2['name'],
                     "group_type": object2['type'],
@@ -331,11 +349,11 @@ class Elements(object):
 
     def _identify_group(self, item_type):
         """See if the item_type is a group."""
-        return self._identify_item_type(item_type, self.group_abbreviations)
+        return self._identify_item_type(item_type, GROUP_ABBREVIATIONS)
 
     def _identify_indicator(self, item_type):
         """See if the item_type is an indicator."""
-        return self._identify_item_type(item_type, self.indicator_abbreviations)
+        return self._identify_item_type(item_type, INDICATOR_ABBREVIATIONS)
 
     def _add_attributes(self, item_api_base, item_id, attributes):
         """Add the attributes to the given item."""
@@ -384,10 +402,10 @@ class Elements(object):
             # create objects
             created_objects = list()
             for obj in objects:
-                if obj in self.group_abbreviations:
-                    created_objects.append(self._create_group(self.group_abbreviations[obj]))
-                elif obj in self.indicator_abbreviations:
-                    created_objects.append(self._create_indicator(self.indicator_abbreviations[obj]))
+                if obj in GROUP_ABBREVIATIONS:
+                    created_objects.append(self._create_group(GROUP_ABBREVIATIONS[obj]))
+                elif obj in GROUP_ABBREVIATIONS:
+                    created_objects.append(self._create_indicator(GROUP_ABBREVIATIONS[obj]))
 
             if len(associations) > 0:
                 # create associations
@@ -404,23 +422,23 @@ class Elements(object):
         for incident in incidents:
             self._set_event_date(event_date, incident['id'])
 
-    def add_attributes(self, attributes, items, item_type):
+    def add_attributes(self, attributes, items):
         """Add attributes to the given items."""
         for item in items:
-            item_api_base, item_id_key = self._get_api_details(item, item_type)
+            item_api_base, item_id_key = self._get_api_details(item)
             self._add_attributes(item_api_base, item[item_id_key], attributes)
 
     # TODO: consolidate add_attributes, add_sec_labels, and add_tags functions
-    def add_sec_labels(self, sec_labels, items, item_type):
+    def add_sec_labels(self, sec_labels, items):
         """Add security labels to the given items."""
         for item in items:
-            item_api_base, item_id_key = self._get_api_details(item, item_type)
+            item_api_base, item_id_key = self._get_api_details(item)
             self._add_sec_labels(item_api_base, item[item_id_key], sec_labels)
 
-    def add_tags(self, tags, items, item_type):
+    def add_tags(self, tags, items):
         """Add tags to the given items."""
         for item in items:
-            item_api_base, item_id_key = self._get_api_details(item, item_type)
+            item_api_base, item_id_key = self._get_api_details(item)
             self._add_tags(item_api_base, item[item_id_key], tags)
 
     def process(self):

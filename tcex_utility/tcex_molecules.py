@@ -14,9 +14,9 @@ class Molecules(Elements):
     # RETRIEVAL FUNCTIONS
     #
 
-    def get_items_by_attribute(self, item_attribute, item_type):
+    def get_items_by_attribute(self, item_attribute, item_type=None):
         """Find all items with the given attribute."""
-        results = self.get_items(item_type, includeAttributes=True)
+        results = self.get_items(item_type=item_type, includeAttributes=True)
         items = list()
 
         for result in results:
@@ -30,20 +30,20 @@ class Molecules(Elements):
                             items.append(result)
         return items
 
-    def get_items_by_sec_label(self, item_sec_label, item_type):
+    def get_items_by_sec_label(self, item_sec_label, item_type=None):
         """Find all items with the given security label."""
-        results = self.get_items(item_type)
+        results = self.get_items(item_type=item_type)
         items = list()
 
         for result in results:
-            sec_labels = [sec_label['name'] for sec_label in self.get_sec_labels(result, item_type)['securityLabel']]
+            sec_labels = [sec_label['name'] for sec_label in self.get_sec_labels(result)['securityLabel']]
             if item_sec_label in sec_labels:
                 items.append(result)
         return items
 
-    def get_items_by_tag(self, item_tag, item_type):
+    def get_items_by_tag(self, item_tag, item_type=None):
         """Find all items with the given tag."""
-        results = self.get_items(item_type, includeTags=True)
+        results = self.get_items(item_type=item_type, includeTags=True)
         items = list()
 
         for result in results:
@@ -58,23 +58,23 @@ class Molecules(Elements):
 
     def add_attributes_to_items_by_type(self, attributes, item_type):
         """Add the given attributes to all items of the given type."""
-        items = self.get_items(item_type)
+        items = self.get_items(item_type=item_type)
         self.add_attributes(attributes, items, item_type)
         return items
 
-    def add_attributes_to_items_by_attribute(self, new_attributes, item_type, item_attribute):
+    def add_attributes_to_items_by_attribute(self, new_attributes, item_attribute, item_type=None):
         """Add the given attributes to all items of the given type."""
         items = self.get_items_by_attribute(item_attribute, item_type)
         self.add_attributes(new_attributes, items, item_type)
         return items
 
-    def add_attributes_to_items_by_sec_label(self, attributes, item_type, item_sec_label):
+    def add_attributes_to_items_by_sec_label(self, attributes, item_sec_label, item_type=None):
         """Add the given attributes to all items with the given security label."""
         items = self.get_items_by_sec_label(item_sec_label, item_type)
-        self.add_attributes(attributes, items, item_type)
+        self.add_attributes(attributes, items)
         return items
 
-    def add_attributes_to_items_by_tag(self, attributes, item_type, item_tag):
+    def add_attributes_to_items_by_tag(self, attributes, item_tag, item_type=None):
         """Add the given attributes to all items with the given tag."""
         items = self.get_items_by_tag(item_tag, item_type)
         self.add_attributes(attributes, items, item_type)
@@ -86,23 +86,23 @@ class Molecules(Elements):
 
     def add_sec_labels_to_items_by_type(self, sec_labels, item_type):
         """Add the given security labels to all items of the given type."""
-        items = self.get_items(item_type)
+        items = self.get_items(item_type=item_type)
         self.add_sec_labels(sec_labels, items, item_type)
         return items
 
-    def add_sec_labels_to_items_by_attribute(self, new_sec_labels, item_type, item_attribute):
+    def add_sec_labels_to_items_by_attribute(self, new_sec_labels, item_attribute, item_type=None):
         """Add the given security labels to all items with the given attribute."""
         items = self.get_items_by_attribute(item_attribute, item_type)
         self.add_sec_labels(new_sec_labels, items, item_type)
         return items
 
-    def add_sec_labels_to_items_by_sec_label(self, new_sec_labels, item_type, item_sec_label):
+    def add_sec_labels_to_items_by_sec_label(self, new_sec_labels, item_sec_label, item_type=None):
         """Add the given security labels to all items with the given security label."""
         items = self.get_items_by_sec_label(item_sec_label, item_type)
         self.add_sec_labels(new_sec_labels, items, item_type)
         return items
 
-    def add_sec_labels_to_items_by_tag(self, new_sec_labels, item_type, item_tag):
+    def add_sec_labels_to_items_by_tag(self, new_sec_labels, item_tag, item_type=None):
         """Add the given security labels to all items with the given tag."""
         items = self.get_items_by_tag(item_tag, item_type)
         self.add_sec_labels(new_sec_labels, items, item_type)
@@ -114,23 +114,23 @@ class Molecules(Elements):
 
     def add_tags_to_items_by_type(self, tags, item_type):
         """Add the given tags to all items of the given type."""
-        items = self.get_items(item_type)
+        items = self.get_items(item_type=item_type)
         self.add_tags(tags, items, item_type)
         return items
 
-    def add_tags_to_items_by_attribute(self, new_tags, item_type, item_attribute):
+    def add_tags_to_items_by_attribute(self, new_tags, item_attribute, item_type=None):
         """Add the given tags to all items with the given attribute."""
         items = self.get_items_by_attribute(item_attribute, item_type)
         self.add_tags(new_tags, items, item_type)
         return items
 
-    def add_tags_to_items_by_sec_label(self, new_tags, item_type, item_sec_label):
+    def add_tags_to_items_by_sec_label(self, new_tags, item_sec_label, item_type=None):
         """Add the given tags to all items with the given security label."""
         items = self.get_items_by_sec_label(item_sec_label, item_type)
         self.add_tags(new_tags, items, item_type)
         return items
 
-    def add_tags_to_items_by_tag(self, new_tags, item_type, item_tag):
+    def add_tags_to_items_by_tag(self, new_tags, item_tag, item_type=None):
         """Add the given tags to all items with the given tag."""
         items = self.get_items_by_tag(item_tag, item_type)
         self.add_tags(new_tags, items, item_type)
@@ -140,7 +140,7 @@ class Molecules(Elements):
     # MISC FUNCTIONS
     #
 
-    def update_attributes_on_items(self, old_attribute, new_attribute, items, items_type):
+    def update_attributes_on_items(self, old_attribute, new_attribute, items, items_type=None):
         """Change the old_attribute to the new_attribute for all of the given items."""
         # if no attribute type is given for the new attribute, assume it is the same type as the old attribute
         if not new_attribute.get('type'):
@@ -161,3 +161,7 @@ class Molecules(Elements):
                         self.delete_attributes(item, items_type, attribute['id'])
                         self.add_attributes([item], items_type, [new_attribute])
                         break
+
+    def replace_tag(old_tag, new_tag, item_type=None):
+        """Replace all items tagged with the old_tag with the new_tag and remove the old_tag."""
+        items = self.get_items_by_tag(old_tag, item_type)
