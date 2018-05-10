@@ -8,6 +8,7 @@ except:
     import configparser as ConfigParser
 import hashlib
 import json
+import os
 import random
 import sys
 import uuid
@@ -68,7 +69,8 @@ class Elements(object):
 
     def _authenticate(self):
         config = ConfigParser.RawConfigParser()
-        config.read('./tc.conf')
+        config_file_path = os.path.abspath(os.path.join(os.path.dirname(__file__), './tc.conf'))
+        config.read(config_file_path)
 
         try:
             api_access_id = config.get('threatconnect', 'api_access_id')
@@ -76,8 +78,11 @@ class Elements(object):
             api_default_org = config.get('threatconnect', 'api_default_org')
             api_base_url = config.get('threatconnect', 'api_base_url')
         except ConfigParser.NoOptionError:
-            print('Could not read configuration file.')
+            print('Could not read configuration file at {}'.format(config_file_path))
             sys.exit(1)
+        except ConfigParser.NoSectionError:
+            print("Unable to read config file at {}".format(config_file_path))
+            raise
 
         self.tcex.args.api_access_id = api_access_id
         self.tcex.args.api_secret_key = api_secret_key
@@ -211,6 +216,24 @@ class Elements(object):
                             items.append(result)
         return items
 
+    def _get_sec_labels(self, item, item_type):
+        """Get security labels for the given item."""
+        item_api_base, item_id_key = self._get_api_details(item, item_type)
+        return self._api_request('GET', '{}/{}/securityLabels'.format(item_api_base, item[item_id_key]))
+
+    def get_items_by_sec_label(self, item_sec_label, item_type):
+        """Find all items with the given security label."""
+        item_api_base, item_id_key = self._get_api_details({}, item_type)
+        results = self._api_request('GET', item_api_base)
+        results = results.get(item_type.lower())
+        items = list()
+
+        for result in results:
+            sec_labels = [sec_label['name'] for sec_label in self._get_sec_labels(result, item_type)['securityLabel']]
+            if item_sec_label in sec_labels:
+                items.append(result)
+        return items
+
     def get_items_by_tag(self, item_tag, item_type):
         """Find all items with the given tag."""
         item_api_base, item_id_key = self._get_api_details({}, item_type)
@@ -331,6 +354,16 @@ class Elements(object):
         for attribute in attributes:
             self._api_request('POST', '{}/{}/attributes'.format(item_api_base, item_id), attribute)
 
+    def _add_sec_labels(self, item_api_base, item_id, sec_labels):
+        """Add the security labels to the given item."""
+        for label in sec_labels:
+            self._api_request('POST', '{}/{}/securityLabels/{}'.format(item_api_base, item_id, label))
+
+    def _add_tags(self, item_api_base, item_id, tags):
+        """Add the tags to the given item."""
+        for tag in tags:
+            self._api_request('POST', '{}/{}/tags/{}'.format(item_api_base, item_id, tag))
+
     def add_default_metadata(self, metadata, object_type):
         """Add metadata which will be added to all objects of the given type."""
         # TODO: add validation to make sure the object_type is valid
@@ -388,6 +421,19 @@ class Elements(object):
         for item in items:
             item_api_base, item_id_key = self._get_api_details(item, item_type)
             self._add_attributes(item_api_base, item[item_id_key], attributes)
+
+    # TODO: consolidate add_attributes, add_sec_labels, and add_tags functions
+    def add_sec_labels(self, sec_labels, items, item_type):
+        """Add security labels to the given items."""
+        for item in items:
+            item_api_base, item_id_key = self._get_api_details(item, item_type)
+            self._add_sec_labels(item_api_base, item[item_id_key], sec_labels)
+
+    def add_tags(self, tags, items, item_type):
+        """Add tags to the given items."""
+        for item in items:
+            item_api_base, item_id_key = self._get_api_details(item, item_type)
+            self._add_tags(item_api_base, item[item_id_key], tags)
 
     def process(self):
         """Process all of the data."""
