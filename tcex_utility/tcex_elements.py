@@ -205,9 +205,14 @@ class Elements(object):
         results = self._api_request('DELETE', api_path)
         return results
 
-    def delete_tag(self, item, tag):
+    def remove_tag(self, item, tag):
         item_api_base, item_id_key = self._get_api_details(item)
         api_path = '{}/{}/tags/{}'.format(item_api_base, item[item_id_key], tag)
+        results = self._api_request('DELETE', api_path)
+        return results
+
+    def delete_tag(self, tag):
+        api_path = 'tags/{}'.format(tag)
         results = self._api_request('DELETE', api_path)
         return results
 
@@ -441,10 +446,10 @@ class Elements(object):
             item_api_base, item_id_key = self._get_api_details(item)
             self._add_tags(item_api_base, item[item_id_key], tags)
 
-    def delete_tags(self, tags, items):
+    def remove_tags(self, tags, items):
         for item in items:
             for tag in tags:
-                self.delete_tag(item, tag)
+                self.remove_tag(item, tag)
 
     def process(self):
         """Process all of the data."""
