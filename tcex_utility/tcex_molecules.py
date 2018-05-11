@@ -6,9 +6,10 @@ from .tcex_elements import Elements
 
 
 class Molecules(Elements):
+
     def __init__(self, owner=None):
         self.owner = owner
-        super(Molecules, self).__init__()
+        super(Molecules, self).__init__(owner=owner)
 
     #
     # RETRIEVAL FUNCTIONS
