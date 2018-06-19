@@ -186,7 +186,7 @@ class Elements(object):
     def _generate_test_indicator(self, indicator_type):
         """Create a test indicator of the given type."""
         host_base = str(uuid.uuid4()).split('-')[0]
-        base_indicator = INDICATOR_BASE_TEMPLATES[indicator_type]
+        base_indicator = INDICATOR_BASE_TEMPLATES[indicator_type.lower()]
 
         if indicator_type == 'Address':
             return base_indicator.format(random.randint(0, 255), random.randint(0, 255))
@@ -222,7 +222,7 @@ class Elements(object):
         items = list()
         # if there is no reason to make an API call, just use the tcex.resource library
         if not includeAttributes and not includeTags:
-            item_type = self.inflect_engine.singular_noun(ITEM_TYPE_TO_API_BRANCH[item_type])
+            item_type = self.inflect_engine.singular_noun(ITEM_TYPE_TO_API_BRANCH[item_type.lower()])
             # make sure the first character in the type is uppercased (so that it will work with TCEX)
             item_type = item_type[0].title() + item_type[1:]
             item_data = self.tcex.resource(item_type)
@@ -452,6 +452,39 @@ class Elements(object):
             for tag in tags:
                 self.remove_tag(item, tag)
 
-    def process(self):
+    def process(self, indicator_batch=True):
         """Process all of the data."""
-        self.tcex.jobs.process(self.owner)
+        self.tcex.jobs.process(self.owner, indicator_batch=indicator_batch)
+
+    def create_from_tcex_json(self, tcex_json, indicator_batch=True):
+        """Create the given data in ThreatConnect.
+
+        Inputs:
+            - tcex_json: This value is a dictionary with the possible keys:
+                - 'groups': A list of groups represented by json in the format described here: https://docs.threatconnect.com/en/latest/tcex/jobs.html#groups
+
+                - 'indicators': A list of indicators represented by json in the format described here: https://docs.threatconnect.com/en/latest/tcex/jobs.html#indicators
+
+                - 'file_occurrences': A list of file occurrences represented by json in the format described here: https://docs.threatconnect.com/en/latest/tcex/jobs.html#file-occurrence
+
+                - 'group_to_indicator_associations': A list of group-to-indicator associations represented by json in the format described here: https://docs.threatconnect.com/en/latest/tcex/jobs.html#group-to-indicator-associations
+
+                - 'group_to_group_associations': A list of group-to-group associations represented by json in the format described here: https://docs.threatconnect.com/en/latest/tcex/jobs.html#group-to-group-associations
+
+                - 'indicator_to_indicator_associations': A list of indicator-to-indicator associations represented by json in the format described here: https://docs.threatconnect.com/en/latest/tcex/jobs.html#indicator-to-indicator-associations
+
+        """
+        for group_json in tcex_json.get('groups'):
+            self.tcex.jobs.group(group_json)
+        for indicator_json in tcex_json.get('indicators'):
+            print("here {}".format(indicator_json))
+            self.tcex.jobs.indicator(indicator_json)
+        for file_occurrence_json in tcex_json.get('file_occurrences'):
+            self.tcex.jobs.file_occurrence(file_occurrence_json)
+        for group_association_json in tcex_json.get('group_to_indicator_associations'):
+            self.tcex.jobs.group_association(group_association_json)
+        for group_association_json in tcex_json.get('group_to_group_associations'):
+            self.tcex.jobs.association(group_association_json)
+        for indicator_association_json in tcex_json.get('indicator_to_indicator_associations'):
+            self.tcex.jobs.association(indicator_association_json)
+        self.process(indicator_batch)
