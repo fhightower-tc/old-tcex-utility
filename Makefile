@@ -46,9 +46,10 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr .tox/
 	rm -f .coverage
 	rm -fr htmlcov/
+	rm -rf .cache
 
 lint: ## check style with flake8
-	flake8 tcex_utility tests
+	flake8 democritus tests
 
 test: ## run tests quickly with the default Python
 	py.test
@@ -58,16 +59,16 @@ test-all: ## run tests on every Python version with tox
 	tox
 
 coverage: ## check code coverage quickly with the default Python
-	coverage run --source tcex_utility -m pytest
+	coverage run --source democritus -m pytest
 	
 		coverage report -m
 		coverage html
 		$(BROWSER) htmlcov/index.html
 
 docs: ## generate Sphinx HTML documentation, including API docs
-	rm -f docs/tcex_utility.rst
+	rm -f docs/democritus.rst
 	rm -f docs/modules.rst
-	sphinx-apidoc -o docs/ tcex_utility
+	sphinx-apidoc -o docs/ democritus
 	$(MAKE) -C docs clean
 	$(MAKE) -C docs html
 	$(BROWSER) docs/_build/html/index.html
@@ -88,7 +89,7 @@ install: clean ## install the package to the active Python's site-packages
 	python setup.py install
 
 upstream: ## set the upstream for the repository
-	git remote set-upstream https://github.com/fhightower-tc/tcex_utility.git
+	git remote set-upstream https://gitlab.com/fhightower-tc/democritus.git
 
 init: ## install the development requirements with pip (related to python2.x)
 	pip install -r requirements_dev.txt

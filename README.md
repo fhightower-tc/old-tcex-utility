@@ -1,6 +1,6 @@
-# TCEX Utility
+# Democritus
 
-Utility for TCEX.
+Utility functions for TCEX.
 
 ## Usage
 

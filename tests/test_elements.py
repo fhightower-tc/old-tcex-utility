@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from tcex_utility.tcex_elements import Elements
+from democritus.elements import Elements
 
 OWNER = 'Research Labs'
 

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Relatively complex functions (known as 'Molecules') performed using the underlying 'Elements'."""
 
-from .tcex_elements import Elements
+from .elements import Elements
 
 
 class Molecules(Elements):

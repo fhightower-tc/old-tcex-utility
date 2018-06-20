@@ -21,19 +21,19 @@ test_requirements = [
 ]
 
 setup(
-    name='tcex_utility',
+    name='democritus',
     version='0.1.0',
-    description="Utility for TCEX.",
+    description="Utility functions for TCEX.",
     long_description=readme + '\n\n' + history,
     author="Floyd Hightower",
     author_email='',
-    url='https://github.com/fhightower-tc/tcex_utility',
+    url='https://gitlab.com/fhightower-tc/democritus',
     packages=find_packages(exclude=('tests', 'docs')),
     include_package_data=True,
     install_requires=requirements,
     license=license,
     zip_safe=True,
-    keywords='tcex_utility',
+    keywords='democritus, tcex, threatconnect',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
