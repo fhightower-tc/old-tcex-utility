@@ -109,7 +109,7 @@ class Elements(object):
         if self.owner is None:
             self.owner = api_default_org
 
-    def _check_for_default_metdata(self, object_data, object_type):
+    def _check_for_default_metdata(self, object_type, object_data):
         """See if there is metadata for objects of the given type and if so, add it to the object's data."""
         if self.default_metadata.get(object_type):
             if self.default_metadata[object_type].get('attribute'):
@@ -141,7 +141,7 @@ class Elements(object):
             group_data['fileName'] = 'test.yara'
             group_data['fileText'] = 'Test Signature'
             group_data['fileType'] = 'Yara'
-        group_data = self._check_for_default_metdata(group_data, group_type)
+        group_data = self._check_for_default_metdata(group_type, group_data)
         self.tcex.jobs.group(group_data)
         return group_data
 
@@ -200,7 +200,6 @@ class Elements(object):
             return base_indicator.format(host_base)
 
     def delete_attribute(self, item, attribute_id):
-        """Get all attributes for the given item."""
         item_api_base, item_id_key = self._get_api_details(item)
         api_path = '{}/{}/attributes/{}'.format(item_api_base, item[item_id_key], attribute_id)
         results = self._api_request('DELETE', api_path)
@@ -265,7 +264,7 @@ class Elements(object):
             'summary': indicator,
             'type': indicator_type
         }
-        indicator_data = self._check_for_default_metdata(indicator_data, indicator_type)
+        indicator_data = self._check_for_default_metdata(indicator_type, indicator_data)
         self.tcex.jobs.indicator(indicator_data)
         # this is done to normalize the group and indicator data... it may be better to do this in another function
         indicator_data['name'] = indicator_data['summary']
@@ -339,14 +338,14 @@ class Elements(object):
         """Return the iso format (with a trailing 'Z') of the given date."""
         return self.tcex.utils.format_datetime(date, date_format='%Y-%m-%dT%H:%M:%S') + 'Z'
 
-    def _set_event_date(self, event_date, incident_id):
+    def _set_event_date(self, incident_id, event_date):
         """Set the event date for the incident with the given id."""
         request_body = {
             'eventDate': self._get_iso_date_format(event_date)
         }
         self._api_request('PUT', 'groups/incidents/{}'.format(incident_id), request_body)
 
-    def _identify_item_type(self, search_type, item_types):
+    def _identify_item_type(self, item_types, search_type):
         """Look for the search_type in the given item_types."""
         if search_type in item_types.keys() or search_type in item_types.values():
             return True
@@ -355,11 +354,11 @@ class Elements(object):
 
     def _identify_group(self, item_type):
         """See if the item_type is a group."""
-        return self._identify_item_type(item_type, GROUP_ABBREVIATIONS)
+        return self._identify_item_type(GROUP_ABBREVIATIONS, item_type)
 
     def _identify_indicator(self, item_type):
         """See if the item_type is an indicator."""
-        return self._identify_item_type(item_type, INDICATOR_ABBREVIATIONS)
+        return self._identify_item_type(INDICATOR_ABBREVIATIONS, item_type)
 
     def _add_attributes(self, item_api_base, item_id, attributes):
         """Add the attributes to the given item."""
@@ -423,31 +422,32 @@ class Elements(object):
     def set_event_dates(self, event_date, incidents=None):
         """Set the event dates for the given incidents."""
         if incidents is None:
+            # TODO: is this a good assumption to make?
             incidents = self.get_groups('Incident')
 
         for incident in incidents:
-            self._set_event_date(event_date, incident['id'])
+            self._set_event_date(incident['id'], event_date)
 
-    def add_attributes(self, attributes, items):
+    def add_attributes(self, items, attributes):
         """Add attributes to the given items."""
         for item in items:
             item_api_base, item_id_key = self._get_api_details(item)
             self._add_attributes(item_api_base, item[item_id_key], attributes)
 
     # TODO: consolidate add_attributes, add_sec_labels, and add_tags functions
-    def add_sec_labels(self, sec_labels, items):
+    def add_sec_labels(self, items, sec_labels):
         """Add security labels to the given items."""
         for item in items:
             item_api_base, item_id_key = self._get_api_details(item)
             self._add_sec_labels(item_api_base, item[item_id_key], sec_labels)
 
-    def add_tags(self, tags, items):
+    def add_tags(self, items, tags):
         """Add tags to the given items."""
         for item in items:
             item_api_base, item_id_key = self._get_api_details(item)
             self._add_tags(item_api_base, item[item_id_key], tags)
 
-    def remove_tags(self, tags, items):
+    def remove_tags(self, items, tags):
         for item in items:
             for tag in tags:
                 self.remove_tag(item, tag)
