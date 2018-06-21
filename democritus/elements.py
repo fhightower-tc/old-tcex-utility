@@ -220,7 +220,7 @@ class Elements(object):
         """Get all items of the given type."""
         items = list()
         # if there is no reason to make an API call, just use the tcex.resource library
-        if not includeAttributes and not includeTags:
+        if item_type is not None and not includeAttributes and not includeTags:
             item_type = self.inflect_engine.singular_noun(ITEM_TYPE_TO_API_BRANCH[item_type.lower()])
             # make sure the first character in the type is uppercased (so that it will work with TCEX)
             item_type = item_type[0].title() + item_type[1:]
