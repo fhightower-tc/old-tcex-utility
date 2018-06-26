@@ -477,7 +477,6 @@ class Elements(object):
         for group_json in tcex_json.get('groups'):
             self.tcex.jobs.group(group_json)
         for indicator_json in tcex_json.get('indicators'):
-            print("here {}".format(indicator_json))
             self.tcex.jobs.indicator(indicator_json)
         for file_occurrence_json in tcex_json.get('file_occurrences'):
             self.tcex.jobs.file_occurrence(file_occurrence_json)
