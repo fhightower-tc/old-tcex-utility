@@ -3,6 +3,7 @@
 """Relatively complex functions (known as 'Molecules') performed using the underlying 'Elements'."""
 
 from .elements import Elements
+from .utility import get_type_from_weblink
 
 
 class Molecules(Elements):
@@ -171,3 +172,9 @@ class Molecules(Elements):
             self.delete_tag(old_tag)
         else:
             self.remove_tags(items, [old_tag])
+
+    def export_group(self, group_type, group_id):
+        """Export the data representing a group."""
+        group_json = self.get_item(group_type, group_id, includeAttributes=True, includeTags=True)
+        group_json['type'] = get_type_from_weblink(group_json['webLink']).title()
+        return group_json
