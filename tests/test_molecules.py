@@ -13,6 +13,7 @@ def test_add_attributes_to_items_by_sec_label():
         "type": "Description",
         "value": "Test"
     }], 'TLP Red', 'address')
+    # TODO: add some validation here
 
 
 def test_get_items_by_attribute():
@@ -92,3 +93,21 @@ def test_replace_tag():
 def test_update_attributes_on_items():
     pass
     # TODO: implement
+
+
+def test_export_group():
+    m = Molecules(OWNER)
+    group_json = m.export_group('Threat', 3143995)
+    assert len(group_json) == 8
+    assert group_json['name'] == 'Test threat'
+
+
+def test_export_and_create():
+    m = Molecules(OWNER)
+    group_json = m.export_group('Threat', 3143995)
+    assert len(group_json) == 8
+    assert group_json['name'] == 'Test threat'
+    del group_json['id']
+    group_json['name'] = 'New test threat'
+    m.create_group_from_tcex_json(group_json)
+    m.process()

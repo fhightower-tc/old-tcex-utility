@@ -114,7 +114,7 @@ def test_create_from_tcex_json():
 
 def test_create_from_tcex_json():
     e = Elements(OWNER)
-    new_address = e._generate_test_indicator('Address')
+    new_address = e.create_test_indicator('Address')
     tcex_json = {
         'groups': [],
         'indicators': [{
