@@ -107,7 +107,6 @@ def test_export_and_create():
     group_json = m.export_group('Threat', 3143995)
     assert len(group_json) == 8
     assert group_json['name'] == 'Test threat'
-    del group_json['id']
     group_json['name'] = 'New test threat'
     m.create_group_from_tcex_json(group_json)
     m.process()
