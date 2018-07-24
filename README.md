@@ -43,17 +43,17 @@ A signature, document, incident, and file. The signature will be associated with
 
 ```python
 from democritus import Elements
-u = Elements('testing-lab')
-u.create_from_symbolic_pattern('sig=doc=inc-file', 10)
-u.process()
+e = Elements('testing-lab')
+e.create_from_symbolic_pattern('sig=doc=inc-file', 10)
+e.process()
 ```
 
 ### Get Indicators by Type
 
 ```python
 from democritus import Elements
-u = Elements('testing-lab')
-a = u.get_indicators('Address')
+e = Elements('testing-lab')
+a = e.get_indicators('Address')
 print(len(a))
 ```
 
@@ -61,28 +61,28 @@ print(len(a))
 
 ```python
 from democritus import Molecules
-u = Molecules('testing-lab')
-a = u.get_items_by_attribute({"type": "Description", "value": "this is just a test"}, 'Address')
+m = Molecules('testing-lab')
+a = m.get_items_by_attribute({"type": "Description", "value": "this is just a test"}, 'Address')
 ```
 
 ### Add Attribute to Items with a Given Attribute
 
 ```python
 from democritus import Molecules
-u = Molecules('testing-lab')
-a = u.add_attributes_to_items_by_attribute([{"type": "Description", "value": "New attribute"}], 'Address', {"type": "Description", "value": "this is just a test"})
+m = Molecules('testing-lab')
+a = m.add_attributes_to_items_by_attribute([{"type": "Description", "value": "New attribute"}], 'Address', {"type": "Description", "value": "this is just a test"})
 ```
 
 ### Add Attributes to Items with a Given Tag
 
 ```python
 from democritus import Molecules
-u = Molecules('testing-lab')
-a = u.add_attributes_to_items_by_tag([{"type": "Description", "value": "this is just a test"}], 'Address', 'Test Tag')
+m = Molecules('testing-lab')
+a = m.add_attributes_to_items_by_tag([{"type": "Description", "value": "this is just a test"}], 'Address', 'Test Tag')
 ```
 
 For more examples, refer to the `tests/` directory.
 
 ## Credits
 
-This package was created with [Cookiecutter](https://github.com/audreyr/cookiecutter) and fhightower's [Python project template](https://github.com/fhightower-templates/python-project-template).
+This package was created with [Cookiecutter](https://github.com/audreyr/cookiecutter) and fhightower's [Python project template](https://gitlab.com/fhightower-templates/python-project-template).

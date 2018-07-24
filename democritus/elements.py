@@ -132,16 +132,16 @@ class Elements(object):
             created_objects = list()
             for obj in objects:
                 if obj in GROUP_ABBREVIATIONS:
-                    created_objects.append(self._create_test_group(GROUP_ABBREVIATIONS[obj]))
-                elif obj in GROUP_ABBREVIATIONS:
-                    created_objects.append(self._create_indicator(GROUP_ABBREVIATIONS[obj]))
+                    created_objects.append(self.create_test_group(GROUP_ABBREVIATIONS[obj].title()))
+                elif obj in INDICATOR_ABBREVIATIONS:
+                    created_objects.append(self.create_indicator(INDICATOR_ABBREVIATIONS[obj].title()))
 
             if len(associations) > 0:
                 # create associations
                 for i in range(0, len(created_objects) - 1):
-                    self._create_association(created_objects[i], created_objects[i + 1])
+                    self.create_association(created_objects[i], created_objects[i + 1])
                     if associations[i] == '=':
-                        self._create_association(created_objects[i], created_objects[i + 2])
+                        self.create_association(created_objects[i], created_objects[i + 2])
 
     def create_from_tcex_json(self, tcex_json, indicator_batch=True):
         """Create the given data in ThreatConnect.
@@ -208,7 +208,7 @@ class Elements(object):
             group_json['fileName'] = 'test.yara'
             group_json['fileText'] = 'Test Signature'
             group_json['fileType'] = 'Yara'
-        return self.create_group(group_json)
+        return self.create_group_from_tcex_json(group_json)
 
     def create_test_groups(self, count=100, base_name='Test Group', group_type='Incident'):
         """Create the number of groups specified by the count."""
@@ -247,10 +247,10 @@ class Elements(object):
 
     def create_indicator(self, indicator_type, indicator_summary=None):
         """Create an indicator given and indicator type and the indicator summary."""
-        if indicator is None:
-            indicator = self._generate_test_indicator(indicator_type)
+        if indicator_summary is None:
+            indicator_summary = self.create_test_indicator(indicator_type)
         indicator_data = {
-            'summary': indicator,
+            'summary': indicator_summary,
             'type': indicator_type
         }
         indicator_data = self._check_for_default_metdata(indicator_type, indicator_data)
