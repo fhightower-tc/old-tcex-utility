@@ -207,7 +207,7 @@ class Elements(object):
         if group_type == 'Signature':
             group_json['fileName'] = 'test.yara'
             group_json['fileText'] = 'Test Signature'
-            group_json['fileType'] = 'Yara'
+            group_json['fileType'] = 'YARA'
         return self.create_group_from_tcex_json(group_json)
 
     def create_test_groups(self, count=100, base_name='Test Group', group_type='Incident'):
