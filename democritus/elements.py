@@ -26,10 +26,13 @@ FileOccurrence = collections.namedtuple('FileOccurrence', ['name', 'path', 'date
 
 class Elements(object):
 
-    def __init__(self, owner=None):
+    def __init__(self, owner=None, tcex_instance=None):
         self.owner = owner
-        self.tcex = TcEx()
-        self._authenticate()
+        if tcex_instance is not None:
+            self.tcex = tcex_instance
+        else:
+            self.tcex = TcEx()
+            self._authenticate()
         self.default_metadata = {}
 
     #
