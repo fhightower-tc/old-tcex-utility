@@ -18,7 +18,7 @@ class Molecules(Elements):
 
     def get_items_by_attribute(self, item_attribute, item_type=None):
         """Find all items with the given attribute."""
-        results = self.get_items(item_type=item_type, includeAttributes=True)
+        results = self.get_items_by_type(item_type=item_type, include_attributes=True)
         items = list()
 
         for result in results:
@@ -34,7 +34,7 @@ class Molecules(Elements):
 
     def get_items_by_sec_label(self, item_sec_label, item_type=None):
         """Find all items with the given security label."""
-        results = self.get_items(item_type=item_type)
+        results = self.get_items_by_type(item_type=item_type)
         items = list()
 
         for result in results:
@@ -45,7 +45,7 @@ class Molecules(Elements):
 
     def get_items_by_tag(self, item_tag, item_type=None):
         """Find all items with the given tag."""
-        results = self.get_items(item_type=item_type, includeTags=True)
+        results = self.get_items_by_type(item_type=item_type, include_tags=True)
         items = list()
 
         for result in results:
@@ -60,7 +60,7 @@ class Molecules(Elements):
 
     def add_attributes_to_items_by_type(self, attributes, item_type):
         """Add the given attributes to all items of the given type."""
-        items = self.get_items(item_type=item_type)
+        items = self.get_items_by_type(item_type=item_type)
         self.add_attributes(items, attributes)
         return items
 
@@ -88,7 +88,7 @@ class Molecules(Elements):
 
     def add_sec_labels_to_items_by_type(self, sec_labels, item_type):
         """Add the given security labels to all items of the given type."""
-        items = self.get_items(item_type=item_type)
+        items = self.get_items_by_type(item_type=item_type)
         self.add_sec_labels(items, sec_labels)
         return items
 
@@ -116,7 +116,7 @@ class Molecules(Elements):
 
     def add_tags_to_items_by_type(self, tags, item_type):
         """Add the given tags to all items of the given type."""
-        items = self.get_items(item_type=item_type)
+        items = self.get_items_by_type(item_type=item_type)
         self.add_tags(items, tags)
         return items
 
@@ -175,6 +175,6 @@ class Molecules(Elements):
 
     def export_group(self, group_type, group_id):
         """Export the data representing a group."""
-        group_json = self.get_item(group_type, group_id, includeAttributes=True, includeTags=True)
+        group_json = self.get_item(group_type, group_id, include_attributes=True, include_tags=True)
         group_json['type'] = get_type_from_weblink(group_json['webLink']).title()
         return group_json

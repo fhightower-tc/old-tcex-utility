@@ -85,16 +85,16 @@ class Elements(object):
                 object_data['eventDate'] = self.default_metadata[object_type].get('eventDate')
         return object_data
 
-    def _make_api_request(self, method, api_path, body={}, includeAttributes=False, includeTags=False):
+    def _make_api_request(self, method, api_path, body={}, include_attributes=False, include_tags=False):
         """Make an api request."""
         r = self.tcex.request_tc()
         r.url = '{}/{}/{}'.format(self.tcex.args.tc_api_path, API_VERSION, api_path)
         r.add_header('Content-Type', 'application/json')
         r.add_payload('owner', self.owner)
         r.add_payload('resultLimit', 10000)
-        if includeAttributes:
+        if include_attributes:
             r.add_payload('includeAttributes', 'true')
-        if includeTags:
+        if include_tags:
             r.add_payload('includeTags', 'true')
         if method != 'GET':
             r.body = json.dumps(body)
@@ -147,7 +147,7 @@ class Elements(object):
         for indicator_json in self.tcex.jobs._indicators:
             # check if item already exists in TC
             try:
-                existing_item = self.get_item(indicator_json['type'], indicator_json['summary'], includeAttributes=True, includeFileOccurrences=True)
+                existing_item = self.get_item(indicator_json['type'], indicator_json['summary'], include_attributes=True, include_file_occurrences=True)
             except RuntimeError as e:
                 continue
 
@@ -161,7 +161,7 @@ class Elements(object):
 
         for group_json in self.tcex.jobs._groups:
             # check if item already exists in TC
-            existing_item = self.get_item(group_json['type'], group_json['name'], includeAttributes=True)
+            existing_item = self.get_item(group_json['type'], group_json['name'], include_attributes=True)
 
             # if the item exists and it has attributes and the new version of the item also has attributes: deduplicate the attributes (and file occurrences if applicable)
             if existing_item and existing_item.get('attribute') and group_json.get('attribute'):
@@ -378,7 +378,7 @@ class Elements(object):
                     "resource_type": tcex.safe_rt(object2['type']),
                     "custom_association_name": custom_association_name
                 })
-            # TODO: handle file occurrence associations
+            # TODO: handle file action associations
 
     #
     # ATTRIBUTES
@@ -461,12 +461,11 @@ class Elements(object):
     # GENERIC RETRIEVAL
     #
 
-    def get_items(self, item_type=None, includeAttributes=False, includeTags=False):
+    def get_items_by_type(self, item_type=None, include_attributes=False, include_tags=False):
         """Get all items of the given type."""
-        # TODO: add the ability to includeFileOccurrences here...
         items = list()
         # if there is no reason to make an API call, just use the tcex.resource library
-        if item_type is not None and not includeAttributes and not includeTags:
+        if item_type is not None and not include_attributes and not include_tags:
             item_type = standardize_item_type(item_type)
             # make sure the first character in the type is uppercased (so that it will work with TCEX)
             item_type = item_type[0].title() + item_type[1:]
@@ -480,28 +479,28 @@ class Elements(object):
         else:
             if item_type is None or item_type.lower() == 'all':
                 # get all indicators
-                items.extend(self.get_items('indicators', includeAttributes=includeAttributes, includeTags=includeTags))
+                items.extend(self.get_items_by_type('indicators', include_attributes=include_attributes, include_tags=include_tags))
                 # get all groups
-                items.extend(self.get_items('groups', includeAttributes=includeAttributes, includeTags=includeTags))
+                items.extend(self.get_items_by_type('groups', include_attributes=include_attributes, include_tags=include_tags))
                 return items
             elif item_type.lower() == 'indicators':
                 for indicator_type in INDICATOR_ABBREVIATIONS.values():
-                    items.extend(self.get_items(indicator_type, includeAttributes=includeAttributes, includeTags=includeTags))
+                    items.extend(self.get_items_by_type(indicator_type, include_attributes=include_attributes, include_tags=include_tags))
                 return items
             elif item_type.lower() == 'groups':
                 for group_type in GROUP_ABBREVIATIONS.values():
-                    items.extend(self.get_items(group_type, includeAttributes=includeAttributes, includeTags=includeTags))
+                    items.extend(self.get_items_by_type(group_type, include_attributes=include_attributes, include_tags=include_tags))
                 return items
             else:
                 item_api_base, item_id_key = get_api_details({'webLink': '/{}.xhtml'.format(item_type)})
-                results = self._make_api_request('GET', item_api_base, includeAttributes=includeAttributes, includeTags=includeTags)
+                results = self._make_api_request('GET', item_api_base, include_attributes=include_attributes, include_tags=include_tags)
                 items = results.get(standardize_item_type(item_type))
             return items
 
-    def get_item(self, item_type, item_id, includeAttributes=False, includeTags=False, includeFileOccurrences=False):
+    def get_item(self, item_type, item_id, include_attributes=False, include_tags=False, include_file_occurrences=False):
         """Get the single item of the given type based on the given id."""
         # if there is no reason to make an API call, just use the tcex.resource library
-        if not includeAttributes and not includeTags and not includeFileOccurrences:
+        if not include_attributes and not include_tags and not include_file_occurrences:
             item_type = standardize_item_type(item_type)
             # make sure the first character in the type is uppercased (so that it will work with TCEX)
             item_type = item_type[0].title() + item_type[1:]
@@ -513,10 +512,12 @@ class Elements(object):
         # if we want to get attributes and/or tags, make an API request
         else:
             base_api_path = get_api_base_from_type(item_type)
-            results = self._make_api_request('GET', '{}/{}'.format(base_api_path, urllib.parse.quote_plus(item_id)), includeAttributes=includeAttributes, includeTags=includeTags)
+            if isinstance(item_id, str):
+                item_id = urllib.parse.quote_plus(item_id.encode('utf-8'))
+            results = self._make_api_request('GET', '{}/{}'.format(base_api_path, item_id), include_attributes=include_attributes, include_tags=include_tags)
             item = results.get(standardize_item_type(item_type))
 
-            if includeFileOccurrences and standardize_item_type(item_type) == 'file':
+            if include_file_occurrences and standardize_item_type(item_type) == 'file':
                 fileOccurrences = self._make_api_request('GET', '{}/{}/fileOccurrences'.format(base_api_path, item_id))
                 item['fileOccurrences'] = fileOccurrences['fileOccurrence']
 
