@@ -99,7 +99,7 @@ def get_type_from_weblink(weblink):
     return matches[0]
 
 
-# TODO: I think this function can be removed and all references of it changed to use the 
+# TODO: I think this function can be removed and all references of it changed to use the get_api_base_from_type or get_type_from_weblink functions
 def get_api_details(item):
     """Return the base API path and the key which provides the item's id."""
     item_api_base = str()

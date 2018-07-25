@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 """Basic, elemental functions for TCEX."""
 
+import collections
 try:
     import ConfigParser
 except:
@@ -18,6 +19,9 @@ from tcex import TcEx
 from .utility import get_api_details, standardize_item_type, is_group, is_indicator, get_api_base_from_type, get_type_from_weblink, GROUP_ABBREVIATIONS, INDICATOR_ABBREVIATIONS, INDICATOR_BASE_TEMPLATES
 
 API_VERSION = 'v2'
+
+Attribute = collections.namedtuple('Attribute', ['type', 'value'])
+FileOccurrence = collections.namedtuple('FileOccurrence', ['name', 'path', 'date'])
 
 
 class Elements(object):
@@ -63,16 +67,16 @@ class Elements(object):
     def _check_for_default_metdata(self, object_type, object_data):
         """See if there is metadata for objects of the given type and if so, add it to the object's data."""
         if self.default_metadata.get(object_type):
-            if self.default_metadata[object_type].get('attribute'):
+            if self.default_metadata[object_type].get('attributes'):
                 if object_data.get('attribute'):
-                    object_data['attribute'].extend(self.default_metadata[object_type].get('attribute'))
+                    object_data['attribute'].extend(self.default_metadata[object_type].get('attributes'))
                 else:
-                    object_data['attribute'] = self.default_metadata[object_type].get('attribute')
-            if self.default_metadata[object_type].get('tag'):
+                    object_data['attribute'] = self.default_metadata[object_type].get('attributes')
+            if self.default_metadata[object_type].get('tags'):
                 if object_data.get('tag'):
-                    object_data['tag'].extend(self.default_metadata[object_type].get('tag'))
+                    object_data['tag'].extend(self.default_metadata[object_type].get('tags'))
                 else:
-                    object_data['tag'] = self.default_metadata[object_type].get('tag')
+                    object_data['tag'] = self.default_metadata[object_type].get('tags')
             if self.default_metadata[object_type].get('eventDate'):
                 object_data['eventDate'] = self.default_metadata[object_type].get('eventDate')
         return object_data
@@ -109,8 +113,57 @@ class Elements(object):
         """Set the owner for TCEX."""
         self.owner = owner_name
 
-    def process(self, indicator_batch=True):
+    @staticmethod
+    def _deduplicate_attributes(existing_item_attributes, new_attributes):
+        """Deduplicate the item's existing attributes with the ones that we are planning to add."""
+        # add the existing attributes
+        existing_attributes_set = set([Attribute(attr['type'], attr['value']) for attr in existing_item_attributes])
+        # find the new attributes
+        new_attributes_set = set([Attribute(attr['type'], attr['value']) for attr in new_attributes]) - existing_attributes_set
+        # TODO: it is probably not the best idea to indiscriminately set the displayed value (as done in the line below), but this will work for now
+        deduplicated_attributes_list = [{'type': attr.type, 'value': attr.value, 'displayed': True} for attr in new_attributes_set]
+        return deduplicated_attributes_list
+
+    @staticmethod
+    def _deduplicate_file_occurrences(existing_file_occurrences, new_file_occurrences, indicator_summary):
+        # add the existing file occurrences
+        existing_file_occurrences_set = set([FileOccurrence(fo['fileName'], fo['path'], fo['date'].split('T')[0]) for fo in existing_file_occurrences])
+        # find the new file occurrences
+        new_file_occurrences_set = set([FileOccurrence(fo['fileName'], fo['path'], fo['date'].split('T')[0]) for fo in new_file_occurrences if fo['hash'] in indicator_summary]) - existing_file_occurrences_set
+        only_new_file_occurrences_list = [{
+            'fileName': fo.name,
+            'path': fo.path,
+            'date': fo.date,
+            'hash': indicator_summary.split(' :')[0]
+        } for fo in new_file_occurrences_set]
+        return only_new_file_occurrences_list
+
+    def _handle_deduplication(self):
+        # TODO: consolidate the handle of the indicator and group deduplication
+        for indicator_json in self.tcex.jobs._indicators:
+            # check if item already exists in TC
+            existing_item = self.get_item(indicator_json['type'], indicator_json['summary'], includeAttributes=True, includeFileOccurrences=True)
+
+            # if the item exists and it has attributes and the new version of the item also has attributes: deduplicate the attributes (and file occurrences if applicable)
+            if existing_item and existing_item.get('attribute') and indicator_json.get('attribute'):
+                indicator_json['attribute'] = self._deduplicate_attributes(existing_item['attribute'], indicator_json['attribute'])
+
+            # if the indicator is a file type, deduplicate file occurrences
+            if existing_item and existing_item.get('fileOccurrences') and self.tcex.jobs._file_occurrences:
+                self.tcex.jobs._file_occurrences = self._deduplicate_file_occurrences(existing_item['fileOccurrences'], self.tcex.jobs._file_occurrences, indicator_json['summary'])
+
+        for group_json in self.tcex.jobs._groups:
+            # check if item already exists in TC
+            existing_item = self.get_item(group_json['type'], group_json['name'], includeAttributes=True)
+
+            # if the item exists and it has attributes and the new version of the item also has attributes: deduplicate the attributes (and file occurrences if applicable)
+            if existing_item and existing_item.get('attribute') and group_json.get('attribute'):
+                group_json['attribute'] = self._deduplicate_attributes(existing_item['attribute'], group_json['attribute'])
+
+    def process(self, indicator_batch=True, deduplicate_content=True):
         """Process all of the data."""
+        if deduplicate_content:
+            self._handle_deduplication()
         self.tcex.jobs.process(self.owner, indicator_batch=indicator_batch)
 
     def create_from_symbolic_pattern(self, pattern, count=1):
@@ -173,6 +226,7 @@ class Elements(object):
             self.tcex.jobs.association(group_association_json)
         for indicator_association_json in tcex_json.get('indicator_to_indicator_associations'):
             self.tcex.jobs.association(indicator_association_json)
+        # TODO: add the ability to deduplicate content
         self.process(indicator_batch)
 
     #
@@ -326,7 +380,11 @@ class Elements(object):
     def add_attributes(self, tcex_json_items, attributes_list):
         """Add attributes to the given tcex_json_items."""
         for item in tcex_json_items:
-            item_api_base, item_id_key = get_api_details(item)
+            if item.get('webLink'):
+                item_api_base, item_id_key = get_api_details(item)
+            else:
+                item_api_base = get_api_base_from_type(item['type'])
+                item_id_key = 'summary'
             self._add_attributes(item_api_base, item[item_id_key], attributes_list)
 
     def _add_attributes(self, item_api_base, item_id, attributes_list):
@@ -398,6 +456,7 @@ class Elements(object):
 
     def get_items(self, item_type=None, includeAttributes=False, includeTags=False):
         """Get all items of the given type."""
+        # TODO: add the ability to includeFileOccurrences here...
         items = list()
         # if there is no reason to make an API call, just use the tcex.resource library
         if item_type is not None and not includeAttributes and not includeTags:
@@ -432,10 +491,10 @@ class Elements(object):
                 items = results.get(standardize_item_type(item_type))
             return items
 
-    def get_item(self, item_type, item_id, includeAttributes=False, includeTags=False):
+    def get_item(self, item_type, item_id, includeAttributes=False, includeTags=False, includeFileOccurrences=False):
         """Get the single item of the given type based on the given id."""
         # if there is no reason to make an API call, just use the tcex.resource library
-        if not includeAttributes and not includeTags:
+        if not includeAttributes and not includeTags and not includeFileOccurrences:
             item_type = standardize_item_type(item_type)
             # make sure the first character in the type is uppercased (so that it will work with TCEX)
             item_type = item_type[0].title() + item_type[1:]
@@ -447,6 +506,11 @@ class Elements(object):
         # if we want to get attributes and/or tags, make an API request
         else:
             base_api_path = get_api_base_from_type(item_type)
-            results = self._make_api_request('GET', base_api_path + '/{}'.format(item_id), includeAttributes=includeAttributes, includeTags=includeTags)
-            items = results.get(standardize_item_type(item_type))
-            return items
+            results = self._make_api_request('GET', '{}/{}'.format(base_api_path, item_id), includeAttributes=includeAttributes, includeTags=includeTags)
+            item = results.get(standardize_item_type(item_type))
+
+            if includeFileOccurrences and standardize_item_type(item_type) == 'file':
+                fileOccurrences = self._make_api_request('GET', '{}/{}/fileOccurrences'.format(base_api_path, item_id))
+                item['fileOccurrences'] = fileOccurrences['fileOccurrence']
+
+            return item
