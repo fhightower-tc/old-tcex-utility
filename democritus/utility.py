@@ -15,6 +15,7 @@ INDICATOR_BASE_TEMPLATES = {
 
 ITEM_TYPE_TO_API_BRANCH = {
     'address': 'indicators/addresses',
+    'cidr': 'indicators/cidrBlocks',
     'emailaddress': 'indicators/emailAddresses',
     'file': 'indicators/files',
     'host': 'indicators/hosts',
@@ -38,6 +39,7 @@ INDICATOR_WEBLINK_CLASSIFIER = {
 
 INDICATOR_TYPE_TO_ID_KEY = {
     'address': 'ip',
+    'cidr': 'cidrBlock',
     'emailaddress': 'address',
     'file': ['md5', 'sha1', 'sha256'],
     'host': 'hostName',
