@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import re
-
 import inflect
+import re
 
 INDICATOR_BASE_TEMPLATES = {
     'address': '1.2.{}.{}',
@@ -15,7 +14,9 @@ INDICATOR_BASE_TEMPLATES = {
 
 ITEM_TYPE_TO_API_BRANCH = {
     'address': 'indicators/addresses',
-    'cidrblock': 'indicators/cidrBlocks',
+    # there are two entries for cidr ranges to handle the various nomenclatures used to describe cidr ranges from different packages
+    'cidr': 'indicators/cidrBlocks',
+    'cidrBlock': 'indicators/cidrBlocks',
     'emailaddress': 'indicators/emailAddresses',
     'file': 'indicators/files',
     'host': 'indicators/hosts',

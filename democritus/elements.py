@@ -12,6 +12,7 @@ import json
 import os
 import random
 import sys
+import urllib
 import uuid
 
 from tcex import TcEx
@@ -145,7 +146,10 @@ class Elements(object):
         # TODO: consolidate the handle of the indicator and group deduplication
         for indicator_json in self.tcex.jobs._indicators:
             # check if item already exists in TC
-            existing_item = self.get_item(indicator_json['type'], indicator_json['summary'], includeAttributes=True, includeFileOccurrences=True)
+            try:
+                existing_item = self.get_item(indicator_json['type'], indicator_json['summary'], includeAttributes=True, includeFileOccurrences=True)
+            except RuntimeError as e:
+                continue
 
             # if the item exists and it has attributes and the new version of the item also has attributes: deduplicate the attributes (and file occurrences if applicable)
             if existing_item and existing_item.get('attribute') and indicator_json.get('attribute'):
@@ -509,7 +513,7 @@ class Elements(object):
         # if we want to get attributes and/or tags, make an API request
         else:
             base_api_path = get_api_base_from_type(item_type)
-            results = self._make_api_request('GET', '{}/{}'.format(base_api_path, item_id), includeAttributes=includeAttributes, includeTags=includeTags)
+            results = self._make_api_request('GET', '{}/{}'.format(base_api_path, urllib.parse.quote_plus(item_id)), includeAttributes=includeAttributes, includeTags=includeTags)
             item = results.get(standardize_item_type(item_type))
 
             if includeFileOccurrences and standardize_item_type(item_type) == 'file':
