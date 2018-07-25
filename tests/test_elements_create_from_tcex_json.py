@@ -103,12 +103,12 @@ def test_create_from_tcex_json():
     e = Elements(OWNER)
     e.create_from_tcex_json(output_json)
 
-    hosts = [host['hostName'] for host in e.get_items('Host')]
+    hosts = [host['hostName'] for host in e.get_items_by_type('Host')]
     assert 'good.com' in hosts
     assert 'bad.com' in hosts
     assert 'ugly.com' in hosts
 
-    threats = [threat['name'] for threat in e.get_items('Threat')]
+    threats = [threat['name'] for threat in e.get_items_by_type('Threat')]
     assert 'Test threat' in threats
 
 
@@ -127,6 +127,6 @@ def test_create_from_tcex_json():
         'indicator_to_indicator_associations': []
     }
     e.create_from_tcex_json(tcex_json)
-    assert new_address in [entry['ip'] for entry in e.get_items('Address')]
+    assert new_address in [entry['ip'] for entry in e.get_items_by_type('Address')]
 
     # TODO: Build out some more tests that test the associations, file occurrences, and groups
