@@ -66,7 +66,7 @@ class Elements(object):
     def add_default_metadata(self, object_type, metadata):
         """Add metadata which will be added to all objects of the given type."""
         # TODO: add validation to make sure the object_type is valid
-        self.default_metadata[object_type] = metadata
+        self.default_metadata[standardize_item_type(object_type)] = metadata
 
     def _check_for_default_metdata(self, object_type, object_data):
         """See if there is metadata for objects of the given type and if so, add it to the object's data."""
@@ -159,13 +159,14 @@ class Elements(object):
             if existing_item and existing_item.get('fileOccurrences') and self.tcex.jobs._file_occurrences:
                 self.tcex.jobs._file_occurrences = self._deduplicate_file_occurrences(existing_item['fileOccurrences'], self.tcex.jobs._file_occurrences, indicator_json['summary'])
 
-        for group_json in self.tcex.jobs._groups:
-            # check if item already exists in TC
-            existing_item = self.get_item(group_json['type'], group_json['name'], include_attributes=True)
+        # TODO: implement this if we want to
+        # for group_json in self.tcex.jobs._groups:
+        #     # check if item already exists in TC
+        #     existing_item = self.get_item(group_json['type'], group_json['id'], include_attributes=True)
 
-            # if the item exists and it has attributes and the new version of the item also has attributes: deduplicate the attributes (and file occurrences if applicable)
-            if existing_item and existing_item.get('attribute') and group_json.get('attribute'):
-                group_json['attribute'] = self._deduplicate_attributes(existing_item['attribute'], group_json['attribute'])
+        #     # if the item exists and it has attributes and the new version of the item also has attributes: deduplicate the attributes (and file occurrences if applicable)
+        #     if existing_item and existing_item.get('attribute') and group_json.get('attribute'):
+        #         group_json['attribute'] = self._deduplicate_attributes(existing_item['attribute'], group_json['attribute'])
 
     def process(self, indicator_batch=True, deduplicate_content=True):
         """Process all of the data."""
