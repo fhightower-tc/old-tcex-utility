@@ -81,6 +81,35 @@ m = Molecules('testing-lab')
 a = m.add_attributes_to_items_by_tag([{"type": "Description", "value": "this is just a test"}], 'Address', 'Test Tag')
 ```
 
+### Associate Two Lists of Items
+
+```python
+from democritus.molecules import Molecules
+m = Molecules('testing-lab')
+inds = m.get_items_by_type('incident')
+len(inds) # 10
+sigs = m.get_items_by_type('signature')
+len(sigs) # 10
+m.create_associations_between_two_lists(inds, sigs)
+```
+
+### Create Items from a Symbolic Pattern
+
+```python
+from democritus.elements import Elements
+e = Elements('testing-lab')
+e.add_default_metadata('Signature', {
+    'attributes': [{
+        'type': 'Rule Confidence',
+        'value': 'High'
+    }, {
+        'type': 'Rule Priority',
+        'value': 'Medium'
+    }]
+})
+e.create_from_symbolic_pattern('doc=inc=file-sig', 10)
+```
+
 For more examples, refer to the `tests/` directory.
 
 ## Credits

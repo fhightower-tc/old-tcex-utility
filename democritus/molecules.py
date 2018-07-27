@@ -139,6 +139,18 @@ class Molecules(Elements):
         return items
 
     #
+    # ASSOCIATION
+    #
+
+    def create_associations_between_two_lists(self, item_list1, item_list2):
+        """Create associations between each item at the same index of equal-length arrays."""
+        if len(item_list1) != len(item_list2):
+            raise RuntimeWarning("The length of the two lists needs to be the same")
+
+        for index, item in enumerate(item_list1):
+            self.create_association(item, item_list2[index])
+
+    #
     # MISC FUNCTIONS
     #
 

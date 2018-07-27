@@ -343,40 +343,46 @@ class Elements(object):
 
     def create_association(self, object1, object2, custom_association_name=''):
         """Create an association between the two objects."""
+        if not object1.get('type'):
+            object1['type'] = get_type_from_weblink(object1['webLink'])
+
+        if not object2.get('type'):
+            object2['type'] = get_type_from_weblink(object2['webLink'])
+
         if is_group(object1['type']):
             # group to group association
             if is_group(object2['type']):
                 self.tcex.jobs.association({
                     "association_value": object1['name'],
-                    "association_type": object1['type'],
+                    "association_type": object1['type'].title(),
                     "resource_value": object2['name'],
-                    "resource_type": object2['type']
+                    "resource_type": object2['type'].title()
                 })
             # group to indicator association
             else:
                 self.tcex.jobs.group_association({
                     "group_name": object1['name'],
-                    "group_type": object1['type'],
+                    "group_type": object1['type'].title(),
                     "indicator": object2['name'],
-                    "indicator_type": object2['type']
+                    "indicator_type": object2['type'].title()
                 })
         else:
             # indicator to group association
             if is_group(object2['type']):
                 self.tcex.jobs.group_association({
                     "group_name": object2['name'],
-                    "group_type": object2['type'],
+                    "group_type": object2['type'].title(),
                     "indicator": object1['name'],
-                    "indicator_type": object1['type']
+                    "indicator_type": object1['type'].title()
                 })
             # indicator to indicator association
             else:
                 # TODO: implement this feature so that custom indicator to indicator associations can be created
                 self.tcex.jobs.association({
                     "association_value": object1['name'],
-                    "association_type": tcex.safe_rt(object1['type']),
+                    "association_type": tcex.safe_rt(object1['type'].title()),
                     "resource_value": object2['name'],
-                    "resource_type": tcex.safe_rt(object2['type']),
+                    "resource_type": tcex.safe_rt(object2['type'].title()),
                     "custom_association_name": custom_association_name
                 })
             # TODO: handle file action associations
@@ -474,6 +480,7 @@ class Elements(object):
             item_data.owner = self.owner
             # paginate over results
             for item in item_data:
+                item['data'][0]['type'] = get_type_from_weblink(item['data'][0]['webLink'])
                 items.extend(item['data'])
             return items
         # if we want to get attributes and/or tags, make an API request
