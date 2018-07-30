@@ -99,6 +99,7 @@ output_json = {
     'indicator_to_indicator_associations': []
 }
 
+
 def test_create_from_tcex_json():
     e = Elements(OWNER)
     e.create_from_tcex_json(output_json)
@@ -112,7 +113,7 @@ def test_create_from_tcex_json():
     assert 'Test threat' in threats
 
 
-def test_create_from_tcex_json():
+def test_create_from_tcex_json_2():
     e = Elements(OWNER)
     new_address = e.create_test_indicator('Address')
     tcex_json = {
@@ -130,3 +131,22 @@ def test_create_from_tcex_json():
     assert new_address in [entry['ip'] for entry in e.get_items_by_type('Address')]
 
     # TODO: Build out some more tests that test the associations, file occurrences, and groups
+
+output_json_with_victims = {
+    'victims': [
+    {
+        'name': 'Test victim',
+    }],
+    'groups': [],
+    'indicators': [],
+    'file_occurrences': [],
+    'group_to_indicator_associations': [],
+    'group_to_group_associations': [],
+    'indicator_to_indicator_associations': []
+}
+
+
+def test_create_victims():
+    e = Elements(OWNER)
+    e.create_from_tcex_json(output_json_with_victims)
+    assert 'Test victim' in [entry['name'] for entry in e.get_items_by_type('Victim')]

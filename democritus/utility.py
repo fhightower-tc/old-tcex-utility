@@ -27,7 +27,8 @@ ITEM_TYPE_TO_API_BRANCH = {
     'email': 'groups/emails',
     'incident': 'groups/incidents',
     'signature': 'groups/signatures',
-    'threat': 'groups/threats'
+    'threat': 'groups/threats',
+    'victim': 'victims'
 }
 
 INDICATOR_WEBLINK_CLASSIFIER = {
@@ -119,7 +120,9 @@ def get_api_details(item):
             if item.get(key):
                 item_id_key = key
                 break
+    elif standardize_item_type(item_type) == 'victim':
+        item_api_base = get_api_base_from_type(item_type)
     else:
-        print('Unable to identify the type {}'.format(item_type))
+        print('Unable to identify the type "{}"'.format(item_type))
 
     return item_api_base, item_id_key

@@ -472,7 +472,7 @@ class Elements(object):
         """Get all items of the given type."""
         items = list()
         # if there is no reason to make an API call, just use the tcex.resource library
-        if item_type is not None and not include_attributes and not include_tags:
+        if item_type is not None and item_type.lower() != 'victim' and not include_attributes and not include_tags:
             item_type = standardize_item_type(item_type)
             # make sure the first character in the type is uppercased (so that it will work with TCEX)
             item_type = item_type[0].title() + item_type[1:]
