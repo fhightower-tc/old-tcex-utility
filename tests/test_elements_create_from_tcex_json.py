@@ -134,9 +134,10 @@ def test_create_from_tcex_json_2():
 
 output_json_with_victims = {
     'victims': [
-    {
-        'name': 'Test victim',
-    }],
+        {
+            'name': 'Test victim',
+        }
+    ],
     'groups': [],
     'indicators': [],
     'file_occurrences': [],

@@ -221,19 +221,30 @@ class Elements(object):
 
                 - 'indicator_to_indicator_associations': A list of indicator-to-indicator associations represented by json in the format described here: https://docs.threatconnect.com/en/latest/tcex/jobs.html#indicator-to-indicator-associations
 
+                - 'victims': A list of victims represented by json in the format described here: https://docs.threatconnect.com/en/latest/rest_api/victims/victims.html#create-victims
+
         """
-        for group_json in tcex_json.get('groups'):
-            self.tcex.jobs.group(group_json)
-        for indicator_json in tcex_json.get('indicators'):
-            self.tcex.jobs.indicator(indicator_json)
-        for file_occurrence_json in tcex_json.get('file_occurrences'):
-            self.tcex.jobs.file_occurrence(file_occurrence_json)
-        for group_association_json in tcex_json.get('group_to_indicator_associations'):
-            self.tcex.jobs.group_association(group_association_json)
-        for group_association_json in tcex_json.get('group_to_group_associations'):
-            self.tcex.jobs.association(group_association_json)
-        for indicator_association_json in tcex_json.get('indicator_to_indicator_associations'):
-            self.tcex.jobs.association(indicator_association_json)
+        if tcex_json.get('groups'):
+            for group_json in tcex_json['groups']:
+                self.tcex.jobs.group(group_json)
+        if tcex_json.get('indicators'):
+            for indicator_json in tcex_json['indicators']:
+                self.tcex.jobs.indicator(indicator_json)
+        if tcex_json.get('file_occurrences'):
+            for file_occurrence_json in tcex_json['file_occurrences']:
+                self.tcex.jobs.file_occurrence(file_occurrence_json)
+        if tcex_json.get('group_to_indicator_associations'):
+            for group_association_json in tcex_json['group_to_indicator_associations']:
+                self.tcex.jobs.group_association(group_association_json)
+        if tcex_json.get('group_to_group_associations'):
+            for group_association_json in tcex_json['group_to_group_associations']:
+                self.tcex.jobs.association(group_association_json)
+        if tcex_json.get('indicator_to_indicator_associations'):
+            for indicator_association_json in tcex_json['indicator_to_indicator_associations']:
+                self.tcex.jobs.association(indicator_association_json)
+        if tcex_json.get('victims'):
+            for victim in tcex_json['victims']:
+                response = self._make_api_request('POST', 'victims', victim)
         # TODO: add the ability to deduplicate content
         self.process(indicator_batch)
 
