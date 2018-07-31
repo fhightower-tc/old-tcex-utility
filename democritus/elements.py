@@ -159,7 +159,7 @@ class Elements(object):
             if existing_item and existing_item.get('fileOccurrences') and self.tcex.jobs._file_occurrences:
                 self.tcex.jobs._file_occurrences = self._deduplicate_file_occurrences(existing_item['fileOccurrences'], self.tcex.jobs._file_occurrences, indicator_json['summary'])
 
-        # TODO: implement this if we want to
+        # TODO: implement deduplication of groups if we want to...
         # for group_json in self.tcex.jobs._groups:
         #     # check if item already exists in TC
         #     existing_item = self.get_item(group_json['type'], group_json['id'], include_attributes=True)
@@ -171,7 +171,11 @@ class Elements(object):
     def process(self, indicator_batch=True, deduplicate_content=True):
         """Process all of the data."""
         if deduplicate_content:
-            self._handle_deduplication()
+            try:
+                self._handle_deduplication()
+            except Exception as e:
+                # this is added primarily to continue execution if there are encoding errors on TC versions which are still running python2
+                self.tcex.log.error('Exception while attempting to deduplicate: {}'.format(e))
         self.tcex.jobs.process(self.owner, indicator_batch=indicator_batch)
 
     def create_from_symbolic_pattern(self, pattern, count=1):
