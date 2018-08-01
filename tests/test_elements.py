@@ -163,23 +163,29 @@ def test_file_occurrence_deduplication():
     assert len(deduplicated_file_occurrences) == 0
 
 
-def test_host_failure():
-    e = Elements(OWNER)
+def test_log_processing_invalid_indicator():
+    e = Elements(owner=OWNER, process_logs=True)
     e.create_indicator('URL', 'https://HIGHTOWER.space')
-    e.process()
+    errors = e.process()
+    assert len(errors['exclusion_list_failure']) == 0
+    assert len(errors['invalid_indicator']) == 1
+    assert ' - tcex - ERROR - Failed adding indicator https://HIGHTOWER.space type URL ({"status":"Failure","message":"Please enter a valid Url"}).' in errors['invalid_indicator'][0]
+
+
+def test_log_processing_excluded_indicator():
+    e = Elements(owner=OWNER, process_logs=True)
+    e.create_indicator('URL', 'https://google.com')
+    errors = e.process()
+    assert len(errors['exclusion_list_failure']) >= 1
+    assert len(errors['invalid_indicator']) == 0
+    assert 'Failed adding indicator https://google.com type URL ({"status":"Failure","message":"This indicator is contained on a system-wide exclusion list."}).' in errors['exclusion_list_failure'][0]
 
 
 def test_logging():
-    e = Elements(OWNER, process_logs=True)
+    e = Elements(owner=OWNER, process_logs=True)
     e.create_indicator('URL', 'https://HIGHTOWER.space')
     e.process()
-
-    print("e.tcex.log.handlers[1].baseFilename {}".format(e.tcex.log.handlers[1].baseFilename))
-    print("e.tcex.log.handlers[1].baseFilename {}".format(e.tcex.log.handlers))
-
     # read the log file to make sure errors where logged
     with open(e.tcex.log.handlers[-1].baseFilename, 'r') as f:
         text = f.read()
         assert 'Failed adding indicator https://HIGHTOWER.space type URL' in text
-        # make sure there isn't very much text in the log (meaning that the log was cleared since the last function)
-        assert len(text) < 500

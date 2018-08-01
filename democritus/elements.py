@@ -67,7 +67,7 @@ class Elements(object):
             self.owner = api_default_org
 
     def _set_logging(self):
-        # this will print the logs in stdout (handy when using a terminal)
+        # this will output the logs in stdout (handy when using a terminal)
         self.tcex.log = self.tcex._logger(True)
         # this will write logs into `./app.log`
         if self.process_logs:
@@ -190,9 +190,9 @@ class Elements(object):
     def run_log_processing(self):
         """Look through the logs to find certain errors."""
         error_identifiers = {
-            'invalid_indicator': [r'Please enter a valid', 'Failed adding indicator'],
+            'invalid_indicator': ['Failed adding indicator', 'Please enter a valid'],
             # TODO: are there exclusion lists at any level other than the system level?
-            'exclusion_list_failure': [r'This indicator is contained on a system-wide exclusion list']
+            'exclusion_list_failure': ['Failed adding indicator', 'This indicator is contained on a system-wide exclusion list']
         }
         errors = {
             'invalid_indicator': list(),
