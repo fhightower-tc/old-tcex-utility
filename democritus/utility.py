@@ -80,7 +80,11 @@ def is_indicator(item_type):
 
 
 def standardize_item_type(item_type):
-    return inflect.engine().singular_noun(ITEM_TYPE_TO_API_BRANCH[item_type.lower()].split('/')[-1])
+    # TODO: figure out a better way to handle this
+    if item_type.lower() == 'emailaddress':
+        return 'emailaddress'
+    else:
+        return inflect.engine().singular_noun(ITEM_TYPE_TO_API_BRANCH[item_type.lower()].split('/')[-1])
 
 
 def get_indicator_json_key_for_indicator_id(indicator_type):

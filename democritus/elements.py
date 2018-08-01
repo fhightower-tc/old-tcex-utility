@@ -144,11 +144,11 @@ class Elements(object):
         return only_new_file_occurrences_list
 
     def _handle_deduplication(self):
-        # TODO: consolidate the handle of the indicator and group deduplication
         for indicator_json in self.tcex.jobs._indicators:
             # check if item already exists in TC
             try:
                 existing_item = self.get_item(indicator_json['type'], indicator_json['summary'], include_attributes=True, include_file_occurrences=True)
+            # if a `RuntimeError` is raised, assume the request failed which means the item does not exist
             except RuntimeError as e:
                 continue
 
@@ -169,7 +169,7 @@ class Elements(object):
         #     if existing_item and existing_item.get('attribute') and group_json.get('attribute'):
         #         group_json['attribute'] = self._deduplicate_attributes(existing_item['attribute'], group_json['attribute'])
 
-    def process(self, indicator_batch=True, deduplicate_content=True):
+    def process(self, indicator_batch=False, deduplicate_content=True):
         """Process all of the data."""
         if deduplicate_content:
             try:
@@ -209,7 +209,7 @@ class Elements(object):
                     if associations[i] == '=':
                         self.create_association(created_objects[i], created_objects[i + 2])
 
-    def create_from_tcex_json(self, tcex_json, indicator_batch=True):
+    def create_from_tcex_json(self, tcex_json, indicator_batch=False):
         """Create the given data in ThreatConnect.
 
         Inputs:
@@ -256,6 +256,17 @@ class Elements(object):
     #
     # GROUPS
     #
+
+    def create_group(self, group_type, group_name):
+        # TODO: expand this function to handle the particulars of specific groups
+        # TODO: add ability to create a test group if no group name is given
+        group_data = {
+            'name': group_name,
+            'type': group_type
+        }
+        group_data = self._check_for_default_metdata(group_type, group_data)
+        self.tcex.jobs.group(group_data)
+        return group_data
 
     def create_group_from_tcex_json(self, group_json):
         """Create a group from the given tcex json."""
@@ -509,7 +520,9 @@ class Elements(object):
                 return items
             elif item_type.lower() == 'indicators':
                 for indicator_type in INDICATOR_ABBREVIATIONS.values():
-                    items.extend(self.get_items_by_type(indicator_type, include_attributes=include_attributes, include_tags=include_tags))
+                    new_items = self.get_items_by_type(indicator_type, include_attributes=include_attributes, include_tags=include_tags)
+                    if new_items is not None:
+                        items.extend(new_items)
                 return items
             elif item_type.lower() == 'groups':
                 for group_type in GROUP_ABBREVIATIONS.values():

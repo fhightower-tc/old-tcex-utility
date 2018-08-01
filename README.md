@@ -53,7 +53,7 @@ e.process()
 ```python
 from democritus import Elements
 e = Elements('testing-lab')
-a = e.get_indicators('Address')
+a = e.get_items_by_type('Address')
 print(len(a))
 ```
 
