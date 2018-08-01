@@ -27,14 +27,17 @@ FileOccurrence = collections.namedtuple('FileOccurrence', ['name', 'path', 'date
 
 class Elements(object):
 
-    def __init__(self, owner=None, tcex_instance=None):
+    def __init__(self, owner=None, tcex_instance=None, process_logs=False):
+        # TODO: add ability to process logs later
         self.owner = owner
+        self.process_logs = process_logs
         if tcex_instance is not None:
             self.tcex = tcex_instance
         else:
             self.tcex = TcEx()
             self._authenticate()
-        self.default_metadata = {}
+            self._set_logging()
+        self.default_metadata = dict()
 
     #
     # MISC FUNCTIONS
@@ -62,6 +65,22 @@ class Elements(object):
         self.tcex.args.tc_api_path = api_base_url.rstrip('/')
         if self.owner is None:
             self.owner = api_default_org
+
+    def _set_logging(self):
+        # this will print the logs in stdout (handy when using a terminal)
+        self.tcex.log = self.tcex._logger(True)
+        # this will write logs into `./app.log`
+        if self.process_logs:
+            self.tcex.args.tc_log_level = 'warning'
+            self.tcex.args.tc_log_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "."))
+            self.tcex.args.tc_out_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "."))
+            self.tcex.args.tc_log_to_api = False
+            # this is necessary to reinitialize the logger after the parameter(s) was changed in the line(s) above
+            self.tcex.log = self.tcex._logger(False)
+
+            # this is a hack to clear the current log because I can't easily change the mode of the logger used by tcex
+            with open(self.tcex.log.handlers[1].baseFilename, 'w') as f:
+                file_text = f.write('')
 
     def add_default_metadata(self, object_type, metadata):
         """Add metadata which will be added to all objects of the given type."""
