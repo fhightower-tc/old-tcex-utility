@@ -161,3 +161,25 @@ def test_file_occurrence_deduplication():
     e = Elements()
     deduplicated_file_occurrences = e._deduplicate_file_occurrences(old_file_occurrences, new_file_occurrences, 'hashValue : hashValue2 : hashValue3')
     assert len(deduplicated_file_occurrences) == 0
+
+
+def test_host_failure():
+    e = Elements(OWNER)
+    e.create_indicator('URL', 'https://HIGHTOWER.space')
+    e.process()
+
+
+def test_logging():
+    e = Elements(OWNER, process_logs=True)
+    e.create_indicator('URL', 'https://HIGHTOWER.space')
+    e.process()
+
+    print("e.tcex.log.handlers[1].baseFilename {}".format(e.tcex.log.handlers[1].baseFilename))
+    print("e.tcex.log.handlers[1].baseFilename {}".format(e.tcex.log.handlers))
+
+    # read the log file to make sure errors where logged
+    with open(e.tcex.log.handlers[-1].baseFilename, 'r') as f:
+        text = f.read()
+        assert 'Failed adding indicator https://HIGHTOWER.space type URL' in text
+        # make sure there isn't very much text in the log (meaning that the log was cleared since the last function)
+        assert len(text) < 500

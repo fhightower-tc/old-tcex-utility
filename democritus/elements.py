@@ -77,10 +77,9 @@ class Elements(object):
             self.tcex.args.tc_log_to_api = False
             # this is necessary to reinitialize the logger after the parameter(s) was changed in the line(s) above
             self.tcex.log = self.tcex._logger(False)
-
             # this is a hack to clear the current log because I can't easily change the mode of the logger used by tcex
-            with open(self.tcex.log.handlers[1].baseFilename, 'w') as f:
-                file_text = f.write('')
+            with open(self.tcex.log.handlers[-1].baseFilename, 'w') as f:
+                f.write('')
 
     def add_default_metadata(self, object_type, metadata):
         """Add metadata which will be added to all objects of the given type."""
