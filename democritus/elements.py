@@ -187,6 +187,32 @@ class Elements(object):
         #     if existing_item and existing_item.get('attribute') and group_json.get('attribute'):
         #         group_json['attribute'] = self._deduplicate_attributes(existing_item['attribute'], group_json['attribute'])
 
+    def run_log_processing(self):
+        """Look through the logs to find certain errors."""
+        error_identifiers = {
+            'invalid_indicator': [r'Please enter a valid', 'Failed adding indicator'],
+            # TODO: are there exclusion lists at any level other than the system level?
+            'exclusion_list_failure': [r'This indicator is contained on a system-wide exclusion list']
+        }
+        errors = {
+            'invalid_indicator': list(),
+            'exclusion_list_failure': list()
+        }
+
+        with open(self.tcex.log.handlers[-1].baseFilename, 'r') as f:
+            file_text = f.read()
+
+        for line in file_text.split('\n'):
+            for key, patterns in error_identifiers.items():
+                all_patterns_found = True
+                for pattern in patterns:
+                    if pattern not in line:
+                        all_patterns_found = False
+                        break
+                if all_patterns_found:
+                    errors[key].append(line)
+        return errors
+
     def process(self, indicator_batch=False, deduplicate_content=True):
         """Process all of the data."""
         if deduplicate_content:
@@ -196,6 +222,9 @@ class Elements(object):
                 # this is added primarily to continue execution if there are encoding errors on TC versions which are still running python2
                 self.tcex.log.error('Exception while attempting to deduplicate: {}'.format(e))
         self.tcex.jobs.process(self.owner, indicator_batch=indicator_batch)
+        if self.process_logs:
+            errors = self.run_log_processing()
+            return errors
 
     def create_from_symbolic_pattern(self, pattern, count=1):
         # TODO: move this function to the molecules file
