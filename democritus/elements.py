@@ -70,6 +70,7 @@ class Elements(object):
 
     def _check_for_default_metdata(self, object_type, object_data):
         """See if there is metadata for objects of the given type and if so, add it to the object's data."""
+        object_type = standardize_item_type(object_type)
         if self.default_metadata.get(object_type):
             if self.default_metadata[object_type].get('attributes'):
                 if object_data.get('attribute'):

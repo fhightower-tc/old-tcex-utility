@@ -35,11 +35,11 @@ def _create_indicator():
     e = Elements(OWNER)
     e.add_default_metadata('File', {
         'attributes': [{
-        'type': 'Description',
-        'value': 'Test'
+            'type': 'Description',
+            'value': 'Test'
         }, {
-        'type': 'Source',
-        'value': 'Test'
+            'type': 'Source',
+            'value': 'Test'
         }]
     })
     e.create_indicator('File', 'D69AA87FC248F7FAAF5C3BD0B1B1359C')
