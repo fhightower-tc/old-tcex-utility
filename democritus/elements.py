@@ -231,36 +231,6 @@ class Elements(object):
             errors = self.run_log_processing()
             return errors
 
-    def create_from_symbolic_pattern(self, pattern, count=1):
-        # TODO: move this function to the molecules file
-        """Create groups represented symbolically."""
-        associations = list()
-        objects = list()
-        for section in pattern.split("-"):
-            associations.append("-")
-            for i in range(0, section.count('=')):
-                associations.append("=")
-            objects.extend(section.split("="))
-
-        # remove the first association which is erroneous
-        associations = associations[1:]
-
-        for x in range(0, count):
-            # create objects
-            created_objects = list()
-            for obj in objects:
-                if obj in GROUP_ABBREVIATIONS:
-                    created_objects.append(self.create_test_group(GROUP_ABBREVIATIONS[obj].title()))
-                elif obj in INDICATOR_ABBREVIATIONS:
-                    created_objects.append(self.create_indicator(INDICATOR_ABBREVIATIONS[obj].title()))
-
-            if len(associations) > 0:
-                # create associations
-                for i in range(0, len(created_objects) - 1):
-                    self.create_association(created_objects[i], created_objects[i + 1])
-                    if associations[i] == '=':
-                        self.create_association(created_objects[i], created_objects[i + 2])
-
     def create_from_tcex_json(self, tcex_json, indicator_batch=False):
         """Create the given data in ThreatConnect.
 

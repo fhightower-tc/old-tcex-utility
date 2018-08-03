@@ -190,3 +190,33 @@ class Molecules(Elements):
         group_json = self.get_item(group_type, group_id, include_attributes=True, include_tags=True)
         group_json['type'] = get_type_from_weblink(group_json['webLink']).title()
         return group_json
+
+    def create_from_symbolic_pattern(self, pattern, count=1):
+        """Create groups represented symbolically."""
+        # TODO: test this function out to make sure it works - it was moved to molecules.py from elements.py
+        associations = list()
+        objects = list()
+        for section in pattern.split("-"):
+            associations.append("-")
+            for i in range(0, section.count('=')):
+                associations.append("=")
+            objects.extend(section.split("="))
+
+        # remove the first association which is erroneous
+        associations = associations[1:]
+
+        for x in range(0, count):
+            # create objects
+            created_objects = list()
+            for obj in objects:
+                if obj in GROUP_ABBREVIATIONS:
+                    created_objects.append(self.create_test_group(GROUP_ABBREVIATIONS[obj].title()))
+                elif obj in INDICATOR_ABBREVIATIONS:
+                    created_objects.append(self.create_indicator(INDICATOR_ABBREVIATIONS[obj].title()))
+
+            if len(associations) > 0:
+                # create associations
+                for i in range(0, len(created_objects) - 1):
+                    self.create_association(created_objects[i], created_objects[i + 1])
+                    if associations[i] == '=':
+                        self.create_association(created_objects[i], created_objects[i + 2])

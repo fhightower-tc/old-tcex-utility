@@ -42,10 +42,10 @@ This example will create the following objects 10 times:
 A signature, document, incident, and file. The signature will be associated with the document and the incident. The document will be associated with the incident and the file. The incident will be associated with the file.
 
 ```python
-from democritus import Elements
-e = Elements('testing-lab')
-e.create_from_symbolic_pattern('sig=doc=inc-file', 10)
-e.process()
+from democritus import Molecules
+m = Molecules('testing-lab')
+m.create_from_symbolic_pattern('sig=doc=inc-file', 10)
+m.process()
 ```
 
 ### Get Indicators by Type
@@ -96,9 +96,9 @@ m.create_associations_between_two_lists(inds, sigs)
 ### Create Items from a Symbolic Pattern
 
 ```python
-from democritus.elements import Elements
-e = Elements('testing-lab')
-e.add_default_metadata('Signature', {
+from democritus.elements import Molecules
+m = Molecules('testing-lab')
+m.add_default_metadata('Signature', {
     'attributes': [{
         'type': 'Rule Confidence',
         'value': 'High'
@@ -107,7 +107,8 @@ e.add_default_metadata('Signature', {
         'value': 'Medium'
     }]
 })
-e.create_from_symbolic_pattern('doc=inc=file-sig', 10)
+m.create_from_symbolic_pattern('doc=inc=file-sig', 10)
+m.process()
 ```
 
 For more examples, refer to the `tests/` directory.
