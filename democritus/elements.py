@@ -28,7 +28,6 @@ FileOccurrence = collections.namedtuple('FileOccurrence', ['name', 'path', 'date
 class Elements(object):
 
     def __init__(self, owner=None, tcex_instance=None, process_logs=False):
-        # TODO: add ability to process logs later
         self.owner = owner
         self.process_logs = process_logs
         if tcex_instance is not None:
@@ -161,7 +160,7 @@ class Elements(object):
         } for fo in new_file_occurrences_set]
         return only_new_file_occurrences_list
 
-    def _handle_deduplication(self):
+    def _handle_deduplication(self, dont_create_duplicate_groups=False):
         for indicator_json in self.tcex.jobs._indicators:
             # check if item already exists in TC
             try:
@@ -169,23 +168,29 @@ class Elements(object):
             # if a `RuntimeError` is raised, assume the request failed which means the item does not exist
             except RuntimeError as e:
                 continue
+            else:
+                # if the item exists and it has attributes and the new version of the item also has attributes: deduplicate the attributes (and file occurrences if applicable)
+                if existing_item and existing_item.get('attribute') and indicator_json.get('attribute'):
+                    indicator_json['attribute'] = self._deduplicate_attributes(existing_item['attribute'], indicator_json['attribute'])
 
-            # if the item exists and it has attributes and the new version of the item also has attributes: deduplicate the attributes (and file occurrences if applicable)
-            if existing_item and existing_item.get('attribute') and indicator_json.get('attribute'):
-                indicator_json['attribute'] = self._deduplicate_attributes(existing_item['attribute'], indicator_json['attribute'])
+                # if the indicator is a file type, deduplicate file occurrences
+                if existing_item and existing_item.get('fileOccurrences') and self.tcex.jobs._file_occurrences:
+                    self.tcex.jobs._file_occurrences = self._deduplicate_file_occurrences(existing_item['fileOccurrences'], self.tcex.jobs._file_occurrences, indicator_json['summary'])
 
-            # if the indicator is a file type, deduplicate file occurrences
-            if existing_item and existing_item.get('fileOccurrences') and self.tcex.jobs._file_occurrences:
-                self.tcex.jobs._file_occurrences = self._deduplicate_file_occurrences(existing_item['fileOccurrences'], self.tcex.jobs._file_occurrences, indicator_json['summary'])
-
-        # TODO: implement deduplication of groups if we want to...
-        # for group_json in self.tcex.jobs._groups:
-        #     # check if item already exists in TC
-        #     existing_item = self.get_item(group_json['type'], group_json['id'], include_attributes=True)
-
-        #     # if the item exists and it has attributes and the new version of the item also has attributes: deduplicate the attributes (and file occurrences if applicable)
-        #     if existing_item and existing_item.get('attribute') and group_json.get('attribute'):
-        #         group_json['attribute'] = self._deduplicate_attributes(existing_item['attribute'], group_json['attribute'])
+        if dont_create_duplicate_groups:
+            deduplicated_group_list = list()
+            for group_json in self.tcex.jobs._groups:
+                # check if item already exists in TC
+                try:
+                    existing_item = self.get_item(group_json['type'], group_json['name'])
+                # if a `RuntimeError` is raised, assume the request failed which means the item does not exist
+                except RuntimeError as e:
+                    # if there is no group with the current group's name, record the group
+                    deduplicated_group_list.append(group_json)
+                else:
+                    # if a group with this name already exists TC, don't create a duplicate
+                    pass
+            self.tcex.jobs._groups = deduplicated_group_list
 
     def run_log_processing(self):
         """Look through the logs to find certain errors."""
@@ -213,11 +218,11 @@ class Elements(object):
                     errors[key].append(line)
         return errors
 
-    def process(self, indicator_batch=False, deduplicate_content=True):
+    def process(self, indicator_batch=False, deduplicate_content=True, dont_create_duplicate_groups=False):
         """Process all of the data."""
         if deduplicate_content:
             try:
-                self._handle_deduplication()
+                self._handle_deduplication(dont_create_duplicate_groups)
             except Exception as e:
                 # this is added primarily to continue execution if there are encoding errors on TC versions which are still running python2
                 self.tcex.log.error('Exception while attempting to deduplicate: {}'.format(e))
@@ -451,7 +456,7 @@ class Elements(object):
                 })
             # indicator to indicator association
             else:
-                # TODO: implement this feature so that custom indicator to indicator associations can be created
+                # TODO: implement this feature so that custom indicator to indicator associations can be created - is this done?
                 self.tcex.jobs.association({
                     "association_value": object1['name'],
                     "association_type": tcex.safe_rt(object1['type'].title()),
@@ -542,11 +547,11 @@ class Elements(object):
     # GENERIC RETRIEVAL
     #
 
-    def get_items_by_type(self, item_type=None, include_attributes=False, include_tags=False):
+    def get_items_by_type(self, item_type=None, include_attributes=False, include_tags=False, include_associations=False):
         """Get all items of the given type."""
         items = list()
         # if there is no reason to make an API call, just use the tcex.resource library
-        if item_type is not None and item_type.lower() != 'victim' and not include_attributes and not include_tags:
+        if item_type is not None and item_type.lower() != 'victim' and not include_attributes and not include_tags and not include_associations:
             item_type = standardize_item_type(item_type)
             # make sure the first character in the type is uppercased (so that it will work with TCEX)
             item_type = item_type[0].title() + item_type[1:]
@@ -562,33 +567,33 @@ class Elements(object):
         else:
             if item_type is None or item_type.lower() == 'all':
                 # get all indicators
-                items.extend(self.get_items_by_type('indicators', include_attributes=include_attributes, include_tags=include_tags))
+                items.extend(self.get_items_by_type('indicators', include_attributes=include_attributes, include_tags=include_tags, include_associations=include_associations))
                 # get all groups
-                items.extend(self.get_items_by_type('groups', include_attributes=include_attributes, include_tags=include_tags))
+                items.extend(self.get_items_by_type('groups', include_attributes=include_attributes, include_tags=include_tags, include_associations=include_associations))
                 return items
             elif item_type.lower() == 'indicators':
                 for indicator_type in INDICATOR_ABBREVIATIONS.values():
-                    new_items = self.get_items_by_type(indicator_type, include_attributes=include_attributes, include_tags=include_tags)
+                    new_items = self.get_items_by_type(indicator_type, include_attributes=include_attributes, include_tags=include_tags, include_associations=include_associations)
                     if new_items is not None:
                         items.extend(new_items)
                 return items
             elif item_type.lower() == 'groups':
                 for group_type in GROUP_ABBREVIATIONS.values():
-                    items.extend(self.get_items_by_type(group_type, include_attributes=include_attributes, include_tags=include_tags))
+                    items.extend(self.get_items_by_type(group_type, include_attributes=include_attributes, include_tags=include_tags, include_associations=include_associations))
                 return items
             else:
                 item_api_base, item_id_key = get_api_details({'webLink': '/{}.xhtml'.format(item_type)})
-                results = self._make_api_request('GET', item_api_base, include_attributes=include_attributes, include_tags=include_tags)
+                results = self._make_api_request('GET', item_api_base, include_attributes=include_attributes, include_tags=include_tags, include_associations=include_associations)
                 items = results.get(standardize_item_type(item_type))
                 # record the type of the item
                 for item in items:
                     item['type'] = get_type_from_weblink(item['webLink'])
             return items
 
-    def get_item(self, item_type, item_id, include_attributes=False, include_tags=False, include_file_occurrences=False):
+    def get_item(self, item_type, item_id, include_attributes=False, include_tags=False, include_file_occurrences=False, include_associations=False):
         """Get the single item of the given type based on the given id."""
         # if there is no reason to make an API call, just use the tcex.resource library
-        if not include_attributes and not include_tags and not include_file_occurrences:
+        if not include_attributes and not include_tags and not include_file_occurrences and not include_associations:
             item_type = standardize_item_type(item_type)
             # make sure the first character in the type is uppercased (so that it will work with TCEX)
             item_type = item_type[0].title() + item_type[1:]
@@ -608,5 +613,14 @@ class Elements(object):
             if include_file_occurrences and standardize_item_type(item_type) == 'file':
                 fileOccurrences = self._make_api_request('GET', '{}/{}/fileOccurrences'.format(base_api_path, item_id))
                 item['fileOccurrences'] = fileOccurrences['fileOccurrence']
+
+            if include_associations:
+                item['associations'] = list()
+
+                group_associations = self._make_api_request('GET', '{}/{}/groups/'.format(base_api_path, item_id))['group']
+                item['associations'].extend(group_associations)
+
+                indicator_associations = self._make_api_request('GET', '{}/{}/indicators/'.format(base_api_path, item_id))['indicator']
+                item['associations'].extend(indicator_associations)
 
             return item

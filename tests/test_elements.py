@@ -198,3 +198,27 @@ def test_logging():
     with open(e.tcex.log.handlers[-1].baseFilename, 'r') as f:
         text = f.read()
         assert 'Failed adding indicator https://HIGHTOWER.space type URL' in text
+
+
+def test_get_associations():
+    e = Elements(owner=OWNER)
+    e.create_from_symbolic_pattern('inc-file', 2)
+    e.process()
+
+    incidents = e.get_items_by_type('incidents', include_associations=True)
+    assert len(incidents[-1]['associations']) == 1
+    assert len(incidents[-2]['associations']) == 1
+
+
+def test_get_associations():
+    """Make sure groups are being deduplicated based on group name."""
+    e = Elements(owner=OWNER)
+    e.create_group('Incident', 'Test incident')
+    e.process()
+    original_incident_count = len(e.get_items_by_type('incidents'))
+
+    # try to create an incident with the same name and make sure it is not created
+    e.create_group('Incident', 'Test incident')
+    e.process(dont_create_duplicate_groups=True)
+    new_incident_count = len(e.get_items_by_type('incidents'))
+    assert new_incident_count == original_incident_count
