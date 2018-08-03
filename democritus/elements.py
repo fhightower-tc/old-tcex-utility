@@ -554,6 +554,7 @@ class Elements(object):
             item_data.owner = self.owner
             # paginate over results
             for item in item_data:
+                # record the type of the item
                 item['data'][0]['type'] = get_type_from_weblink(item['data'][0]['webLink'])
                 items.extend(item['data'])
             return items
@@ -579,6 +580,9 @@ class Elements(object):
                 item_api_base, item_id_key = get_api_details({'webLink': '/{}.xhtml'.format(item_type)})
                 results = self._make_api_request('GET', item_api_base, include_attributes=include_attributes, include_tags=include_tags)
                 items = results.get(standardize_item_type(item_type))
+                # record the type of the item
+                for item in items:
+                    item['type'] = get_type_from_weblink(item['webLink'])
             return items
 
     def get_item(self, item_type, item_id, include_attributes=False, include_tags=False, include_file_occurrences=False):

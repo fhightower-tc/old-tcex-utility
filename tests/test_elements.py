@@ -63,6 +63,15 @@ def test_deduplication_1():
     assert len(ind_json['fileOccurrences']) == 1
 
 
+def test_type():
+    """Make sure the json returned for a specific item includes the type of the item."""
+    _create_indicator()
+    e = Elements(OWNER)
+    items = e.get_items_by_type('Address', include_attributes=True, include_tags=True)
+    for item in items:
+        assert item.get('type')
+
+
 def test_attribute_deduplication():
     old_attributes = [{
         'type': 'Description',
