@@ -213,12 +213,12 @@ def test_get_associations():
 def test_get_associations():
     """Make sure groups are being deduplicated based on group name."""
     e = Elements(owner=OWNER)
-    e.create_group('Incident', 'Test incident')
+    e.create_group('Threat', 'Test threat')
     e.process()
-    original_incident_count = len(e.get_items_by_type('incidents'))
+    original_threat_count = len(e.get_items_by_type('threats'))
 
-    # try to create an incident with the same name and make sure it is not created
-    e.create_group('Incident', 'Test incident')
+    # try to create an threat with the same name and make sure it is not created
+    e.create_group('Threat', 'Test threat')
     e.process(dont_create_duplicate_groups=True)
-    new_incident_count = len(e.get_items_by_type('incidents'))
-    assert new_incident_count == original_incident_count
+    new_threat_count = len(e.get_items_by_type('threats'))
+    assert new_threat_count == original_threat_count
