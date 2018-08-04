@@ -231,7 +231,7 @@ class Elements(object):
             errors = self.run_log_processing()
             return errors
 
-    def create_from_tcex_json(self, tcex_json, indicator_batch=False):
+    def create_from_tcex_json(self, tcex_json, indicator_batch=False, deduplicate_content=True):
         """Create the given data in ThreatConnect.
 
         Inputs:
@@ -272,20 +272,15 @@ class Elements(object):
         if tcex_json.get('victims'):
             for victim in tcex_json['victims']:
                 response = self._make_api_request('POST', 'victims', victim)
-        # TODO: add the ability to deduplicate content
-        self.process(indicator_batch)
+        self.process(indicator_batch, deduplicate_content)
 
     #
     # GROUPS
     #
 
     def create_group(self, group_type, group_name):
-        # TODO: expand this function to handle the particulars of specific groups
-        # TODO: add ability to create a test group if no group name is given
-        group_data = {
-            'name': group_name,
-            'type': group_type
-        }
+        """Create a group."""
+        group_data = self.create_group_data(group_type, group_name)
         group_data = self._check_for_default_metdata(group_type, group_data)
         self.tcex.jobs.group(group_data)
         return group_data
@@ -304,27 +299,31 @@ class Elements(object):
         for group_json in groups_json:
             self.create_group_from_tcex_json(group_json)
 
-    def create_test_group(self, group_type, group_name=''):
+    def create_group_data(self, group_type, group_name=''):
         # if no group name is given, create one with a uuid
-        if group_name == '':
+        if group_name == '' or group_name is None:
             group_name = 'Test {} {}'.format(group_type, str(uuid.uuid4()).split('-')[0])
         group_json = {
             'name': group_name,
             'type': group_type
         }
+        # TODO: is it possible to create an incident using this function?
+        warning_message = 'You are creating a {} which requires special data. I\'ll add it for you, but you may want to check to make sure this is correct.'.format(group_type)
         if group_type == 'Document':
+            print(warning_message)
             group_json['fileData'] = 'Test document'
             group_json['fileName'] = 'test.txt'
-        if group_type == 'Signature':
+        elif group_type == 'Signature':
+            print(warning_message)
             group_json['fileName'] = 'test.yara'
             group_json['fileText'] = 'Test Signature'
             group_json['fileType'] = 'YARA'
-        return self.create_group_from_tcex_json(group_json)
+        return group_json
 
-    def create_test_groups(self, count=100, base_name='Test Group', group_type='Incident'):
+    def create_test_groups(self, group_type='Incident', base_name='Test Group', count=100):
         """Create the number of groups specified by the count."""
         for x in range(0, count):
-            self.create_test_group(group_type, group_name=base_name + ' {}'.format(x))
+            self.create_group(group_type, None)
 
     #
     # GROUPS: INCIDENTS
@@ -359,7 +358,7 @@ class Elements(object):
     def create_indicator(self, indicator_type, indicator_summary=None):
         """Create an indicator given and indicator type and the indicator summary."""
         if indicator_summary is None:
-            indicator_summary = self.create_test_indicator(indicator_type)
+            indicator_summary = self.create_test_indicator_summary(indicator_type)
         indicator_data = {
             'summary': indicator_summary,
             'type': indicator_type
@@ -370,7 +369,7 @@ class Elements(object):
         indicator_data['name'] = indicator_data['summary']
         return indicator_data
 
-    def create_test_indicator(self, indicator_type):
+    def create_test_indicator_summary(self, indicator_type):
         """Create a test indicator of the given type."""
         host_base = str(uuid.uuid4()).split('-')[0]
         base_indicator = INDICATOR_BASE_TEMPLATES[indicator_type.lower()]
