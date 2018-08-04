@@ -82,8 +82,12 @@ class Elements(object):
 
     def add_default_metadata(self, object_type, metadata):
         """Add metadata which will be added to all objects of the given type."""
-        # TODO: add validation to make sure the object_type is valid
-        self.default_metadata[standardize_item_type(object_type)] = metadata
+        object_type = standardize_item_type(object_type)
+        if is_group(object_type) or is_indicator(object_type):
+            self.default_metadata[object_type] = metadata
+        else:
+            raise ValueError('The object type "{}" is neither a group nor an indicator. Please make sure the object type you provided is correct'.format(object_type))
+
 
     def _check_for_default_metdata(self, object_type, object_data):
         """See if there is metadata for objects of the given type and if so, add it to the object's data."""
