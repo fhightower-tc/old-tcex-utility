@@ -151,3 +151,55 @@ def test_create_victims():
     e = Elements(OWNER)
     e.create_from_tcex_json(output_json_with_victims)
     assert 'Test victim' in [entry['name'] for entry in e.get_items_by_type('Victim')]
+
+
+output_json_with_victims_and_metadata = {
+    'victims': [
+        {
+            'name': 'Test victim',
+            'attributes': [{
+                'type': 'Description',
+                'value': 'Test descript'
+            }],
+            'tags': ['A', 'B']
+        }
+    ],
+    'groups': [],
+    'indicators': [],
+    'file_occurrences': [],
+    'group_to_indicator_associations': [],
+    'group_to_group_associations': [],
+    'indicator_to_indicator_associations': []
+}
+
+
+def test_create_victims_with_metadata():
+    e = Elements(OWNER)
+    e.create_from_tcex_json(output_json_with_victims_and_metadata)
+    victims = e.get_items_by_type('Victim', include_attributes=True, include_tags=True)
+    print("victims {}".format(victims))
+    assert len(victims) == 1
+    assert len(victims[0]['attributes']) == 1
+    assert len(victims[0]['tags']) == 2
+
+
+# TODO: implement this functionality:
+# output_json_with_file_occurrences = {
+#     'victims': [
+#         {
+#             'name': 'Test victim',
+#         }
+#     ],
+#     'groups': [],
+#     'indicators': [],
+#     'file_occurrences': [],
+#     'group_to_indicator_associations': [],
+#     'group_to_group_associations': [],
+#     'indicator_to_indicator_associations': []
+# }
+
+
+# def test_create_file_occurrences():
+#     e = Elements(OWNER)
+#     e.create_from_tcex_json(output_json_with_victims)
+#     assert 'Test victim' in [entry['name'] for entry in e.get_items_by_type('Victim')]

@@ -108,6 +108,7 @@ class Elements(object):
         return object_data
 
     def _make_api_request(self, method, api_path, body={}, include_attributes=False, include_tags=False):
+        # TODO: implement the functionality for include_associations in this function
         """Make an api request."""
         r = self.tcex.request_tc()
         r.url = '{}/{}/{}'.format(self.tcex.args.tc_api_path, API_VERSION, api_path)
@@ -244,6 +245,8 @@ class Elements(object):
 
                 - 'indicators': A list of indicators represented by json in the format described here: https://docs.threatconnect.com/en/latest/tcex/jobs.html#indicators
 
+                - 'victims': A list of victims represented by json in the format described here: https://docs.threatconnect.com/en/latest/rest_api/victims/victims.html#create-victims with the option to have an array with the key `attributes` and/or `tags` containing attributes and tags.
+
                 - 'file_occurrences': A list of file occurrences represented by json in the format described here: https://docs.threatconnect.com/en/latest/tcex/jobs.html#file-occurrence
 
                 - 'group_to_indicator_associations': A list of group-to-indicator associations represented by json in the format described here: https://docs.threatconnect.com/en/latest/tcex/jobs.html#group-to-indicator-associations
@@ -251,9 +254,6 @@ class Elements(object):
                 - 'group_to_group_associations': A list of group-to-group associations represented by json in the format described here: https://docs.threatconnect.com/en/latest/tcex/jobs.html#group-to-group-associations
 
                 - 'indicator_to_indicator_associations': A list of indicator-to-indicator associations represented by json in the format described here: https://docs.threatconnect.com/en/latest/tcex/jobs.html#indicator-to-indicator-associations
-
-                - 'victims': A list of victims represented by json in the format described here: https://docs.threatconnect.com/en/latest/rest_api/victims/victims.html#create-victims
-
         """
         if tcex_json.get('groups'):
             for group_json in tcex_json['groups']:
@@ -261,6 +261,26 @@ class Elements(object):
         if tcex_json.get('indicators'):
             for indicator_json in tcex_json['indicators']:
                 self.tcex.jobs.indicator(indicator_json)
+        if tcex_json.get('victims'):
+            for victim in tcex_json['victims']:
+                attributes = None
+                tags = None
+                # add attributes to the victim
+                if victim.get('attributes'):
+                    attributes = victim['attributes']
+                    del victim['attributes']
+                # add tags to the victim
+                if victim.get('tags'):
+                    tags = victim['tags']
+                    del victim['tags']
+                # create the victim
+                response = self._make_api_request('POST', 'victims', victim)
+                # add attributes to the victim
+                if attributes is not None:
+                    self.add_attributes([response['victim']], attributes)
+                # add tags to the victim
+                if tags is not None:
+                    self.add_tags([response['victim']], tags)
         if tcex_json.get('file_occurrences'):
             for file_occurrence_json in tcex_json['file_occurrences']:
                 self.tcex.jobs.file_occurrence(file_occurrence_json)
@@ -273,9 +293,6 @@ class Elements(object):
         if tcex_json.get('indicator_to_indicator_associations'):
             for indicator_association_json in tcex_json['indicator_to_indicator_associations']:
                 self.tcex.jobs.association(indicator_association_json)
-        if tcex_json.get('victims'):
-            for victim in tcex_json['victims']:
-                response = self._make_api_request('POST', 'victims', victim)
         self.process(indicator_batch, deduplicate_content)
 
     #
@@ -446,6 +463,7 @@ class Elements(object):
     def add_attributes(self, tcex_json_items, attributes_list):
         """Add attributes to the given tcex_json_items."""
         for item in tcex_json_items:
+            # TODO: why is the 'if' statement below necessary? standardization should be done automatically when data comes in/out
             if item.get('webLink'):
                 item_api_base, item_id_key = get_api_details(item)
             else:
@@ -468,7 +486,7 @@ class Elements(object):
     # SECURITY LABELS
     #
 
-    # TODO: consolidate add_attributes, add_sec_labels, and add_tags functions
+    # TODO: consolidate add_attributes, add_sec_labels, and add_tags functions (see the TODO in the `add_attributes` function first, though)
     def add_sec_labels(self, items, sec_labels):
         """Add security labels to the given items."""
         for item in items:
@@ -520,11 +538,11 @@ class Elements(object):
     # GENERIC RETRIEVAL
     #
 
-    def get_items_by_type(self, item_type=None, include_attributes=False, include_tags=False, include_associations=False):
+    def get_items_by_type(self, item_type=None, include_attributes=False, include_tags=False):
         """Get all items of the given type."""
         items = list()
         # if there is no reason to make an API call, just use the tcex.resource library
-        if item_type is not None and item_type.lower() != 'victim' and not include_attributes and not include_tags and not include_associations:
+        if item_type is not None and item_type.lower() != 'victim' and not include_attributes and not include_tags:
             item_type = standardize_item_type(item_type)
             # make sure the first character in the type is uppercased (so that it will work with TCEX)
             item_type = item_type[0].title() + item_type[1:]
@@ -540,23 +558,23 @@ class Elements(object):
         else:
             if item_type is None or item_type.lower() == 'all':
                 # get all indicators
-                items.extend(self.get_items_by_type('indicators', include_attributes=include_attributes, include_tags=include_tags, include_associations=include_associations))
+                items.extend(self.get_items_by_type('indicators', include_attributes=include_attributes, include_tags=include_tags))
                 # get all groups
-                items.extend(self.get_items_by_type('groups', include_attributes=include_attributes, include_tags=include_tags, include_associations=include_associations))
+                items.extend(self.get_items_by_type('groups', include_attributes=include_attributes, include_tags=include_tags))
                 return items
             elif item_type.lower() == 'indicators':
                 for indicator_type in INDICATOR_ABBREVIATIONS.values():
-                    new_items = self.get_items_by_type(indicator_type, include_attributes=include_attributes, include_tags=include_tags, include_associations=include_associations)
+                    new_items = self.get_items_by_type(indicator_type, include_attributes=include_attributes, include_tags=include_tags)
                     if new_items is not None:
                         items.extend(new_items)
                 return items
             elif item_type.lower() == 'groups':
                 for group_type in GROUP_ABBREVIATIONS.values():
-                    items.extend(self.get_items_by_type(group_type, include_attributes=include_attributes, include_tags=include_tags, include_associations=include_associations))
+                    items.extend(self.get_items_by_type(group_type, include_attributes=include_attributes, include_tags=include_tags))
                 return items
             else:
                 item_api_base, item_id_key = get_api_details({'webLink': '/{}.xhtml'.format(item_type)})
-                results = self._make_api_request('GET', item_api_base, include_attributes=include_attributes, include_tags=include_tags, include_associations=include_associations)
+                results = self._make_api_request('GET', item_api_base, include_attributes=include_attributes, include_tags=include_tags)
                 items = results.get(standardize_item_type(item_type))
                 # record the type of the item
                 for item in items:

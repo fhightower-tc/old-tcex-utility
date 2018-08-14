@@ -126,6 +126,7 @@ def get_api_details(item):
                 break
     elif standardize_item_type(item_type) == 'victim':
         item_api_base = get_api_base_from_type(item_type)
+        item_id_key = 'id'
     else:
         print('Unable to identify the type "{}"'.format(item_type))
 
