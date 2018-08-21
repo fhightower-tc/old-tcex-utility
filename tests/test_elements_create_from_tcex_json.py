@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import pytest
+
 from democritus.elements import Elements
 
 OWNER = 'Research Labs'
@@ -100,6 +102,7 @@ output_json = {
 }
 
 
+@pytest.mark.noAPI
 def test_create_from_tcex_json():
     e = Elements(OWNER)
     e.create_from_tcex_json(output_json)
@@ -147,6 +150,7 @@ output_json_with_victims = {
 }
 
 
+@pytest.mark.noAPI
 def test_create_victims():
     e = Elements(OWNER)
     e.create_from_tcex_json(output_json_with_victims)
