@@ -169,7 +169,10 @@ class Elements(object):
         for indicator_json in self.tcex.jobs._indicators:
             # check if item already exists in TC
             try:
-                existing_item = self.get_item(indicator_json['type'], indicator_json['summary'], include_attributes=True, include_file_occurrences=True)
+                if standardize_item_type(indicator_json['type']) == 'file' and ' : ' in indicator_json['summary']:
+                    existing_item = self.get_item(indicator_json['type'], indicator_json['summary'].split(' : ')[0], include_attributes=True, include_file_occurrences=True)
+                else:
+                    existing_item = self.get_item(indicator_json['type'], indicator_json['summary'], include_attributes=True, include_file_occurrences=True)
             # if a `RuntimeError` is raised, assume the request failed which means the item does not exist
             except RuntimeError as e:
                 continue

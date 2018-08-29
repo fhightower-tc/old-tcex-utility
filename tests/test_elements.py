@@ -63,6 +63,30 @@ def test_deduplication_1():
     assert len(ind_json['fileOccurrences']) == 1
 
 
+def test_file_attribute_deduplication():
+    e = Elements(OWNER)
+    file_summary = '{} : {} : {}'.format('a'*32, 'b'*40, 'c'*64)
+    indicator_data = {
+        'indicators': [{
+            'summary': file_summary,
+            'attribute': [{
+                'type': 'Description',
+                'value': 'Test'
+            }, {
+                'type': 'Source',
+                'value': 'Test'
+            }],
+            'type': 'File'
+        }]
+    }
+
+    e.create_from_tcex_json(indicator_data)
+    e.create_from_tcex_json(indicator_data)
+
+    ind_json = e.get_item('File', 'a'*32, include_attributes=True, include_file_occurrences=True)
+    assert len(ind_json['attribute']) == 2
+
+
 def test_type():
     """Make sure the json returned for a specific item includes the type of the item."""
     _create_indicator()
