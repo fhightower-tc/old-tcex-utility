@@ -154,9 +154,9 @@ class Elements(object):
     @staticmethod
     def _deduplicate_file_occurrences(existing_file_occurrences, new_file_occurrences, indicator_summary):
         # add the existing file occurrences
-        existing_file_occurrences_set = set([FileOccurrence(fo['fileName'], fo['path'], fo['date'].split('T')[0]) for fo in existing_file_occurrences])
+        existing_file_occurrences_set = set([FileOccurrence(fo.get('fileName'), fo.get('path'), fo.get('date').split('T')[0]) for fo in existing_file_occurrences])
         # find the new file occurrences
-        new_file_occurrences_set = set([FileOccurrence(fo['fileName'], fo['path'], fo['date'].split('T')[0]) for fo in new_file_occurrences if fo['hash'] in indicator_summary]) - existing_file_occurrences_set
+        new_file_occurrences_set = set([FileOccurrence(fo.get('fileName'), fo.get('path'), fo.get('date').split('T')[0]) for fo in new_file_occurrences if fo['hash'] in indicator_summary]) - existing_file_occurrences_set
         only_new_file_occurrences_list = [{
             'fileName': fo.name,
             'path': fo.path,
