@@ -234,15 +234,15 @@ def test_get_associations():
     assert len(incidents[-2]['associations']) == 1
 
 
-def test_get_associations():
+def test_group_deduplication():
     """Make sure groups are being deduplicated based on group name."""
     e = Elements(owner=OWNER)
     e.create_group('Threat', 'Test threat')
     e.process()
-    original_threat_count = len(e.get_items_by_type('threats'))
+    original_threat_count = len(e.get_items_by_type('threat'))
 
     # try to create an threat with the same name and make sure it is not created
     e.create_group('Threat', 'Test threat')
     e.process(dont_create_duplicate_groups=True)
-    new_threat_count = len(e.get_items_by_type('threats'))
+    new_threat_count = len(e.get_items_by_type('threat'))
     assert new_threat_count == original_threat_count
