@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Relatively complex functions (known as 'Molecules') performed using the underlying 'Elements'."""
+from datetime import datetime
 
 from .elements import Elements
 from .utility import get_type_from_weblink
@@ -8,9 +9,9 @@ from .utility import get_type_from_weblink
 
 class Molecules(Elements):
 
-    def __init__(self, owner=None):
+    def __init__(self, owner=None, tcex_instance=None):
         self.owner = owner
-        super(Molecules, self).__init__(owner=owner)
+        super(Molecules, self).__init__(owner=owner, tcex_instance=tcex_instance)
 
     #
     # RETRIEVAL FUNCTIONS
@@ -153,6 +154,37 @@ class Molecules(Elements):
     #
     # MISC FUNCTIONS
     #
+    def get_items_by_date(self, item_type=None, date_type='dateAdded', lowerbound="0001-01-01T00:00:00Z", upperbound="9999-12-31T23:59:59Z"):
+        """
+            Get all items of a specific type between given lowerbound and
+            upperbound dates for specific date type.
+
+            date_type can be either dateAdded or lastModified
+        """
+        if date_type not in ['dateAdded', 'lastModified']:
+            raise RuntimeError('Date type not valid. Must be either dateAdded or lastModified.')
+        try:
+            lower = datetime.strptime(lowerbound, "%Y-%m-%dT%H:%M:%SZ")
+            upper = datetime.strptime(upperbound, "%Y-%m-%dT%H:%M:%SZ")
+        except ValueError:
+            print('Error: Incorrect format for datetime.')
+        items = self.get_items_by_type(item_type=item_type, include_attributes=True)
+        results = list()
+        for item in items:
+            item_date = datetime.strptime(item[date_type], "%Y-%m-%dT%H:%M:%SZ")
+            if lower < item_date < upper:
+                results.append(item)
+        return results
+
+
+    def deduplicate_attributes_on_items(self, items):
+        """Deduplicate attributes for a given list of items."""
+        for item in items:
+            all_attributes = item.get('attribute', [])
+            new_attributes = self._deduplicate_attributes(all_attributes)
+            for attribute in all_attributes:
+                self.delete_attributes(item, attribute.get('id'))
+            self.add_attributes([item], new_attributes)
 
     def update_attributes_on_items(self, old_attribute, new_attribute, items, items_type=None):
         """Change the old_attribute to the new_attribute for all of the given items."""
