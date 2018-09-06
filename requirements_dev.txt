@@ -1,1 +1,2 @@
 pytest
+tcex==0.8.13
