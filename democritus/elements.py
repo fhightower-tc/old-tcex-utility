@@ -141,12 +141,15 @@ class Elements(object):
         self.owner = owner_name
 
     @staticmethod
-    def _deduplicate_attributes(existing_item_attributes, new_attributes):
+    def _deduplicate_attributes(existing_item_attributes, new_attributes=None):
         """Deduplicate the item's existing attributes with the ones that we are planning to add."""
         # add the existing attributes
         existing_attributes_set = set([Attribute(attr['type'], attr['value']) for attr in existing_item_attributes])
         # find the new attributes
-        new_attributes_set = set([Attribute(attr['type'], attr['value']) for attr in new_attributes]) - existing_attributes_set
+        if new_attributes:
+            new_attributes_set = set([Attribute(attr['type'], attr['value']) for attr in new_attributes]) - existing_attributes_set
+        else:
+            new_attributes_set = existing_attributes_set
         # TODO: it is probably not the best idea to indiscriminately set the displayed value (as done in the line below), but this will work for now
         deduplicated_attributes_list = [{'type': attr.type, 'value': attr.value, 'displayed': True} for attr in new_attributes_set]
         return deduplicated_attributes_list
@@ -480,8 +483,8 @@ class Elements(object):
             self._make_api_request('POST', '{}/{}/attributes'.format(item_api_base, item_id), attribute)
 
     def delete_attributes(self, tcex_json_item, attribute_id):
-        item_api_base, item_id_key = get_api_details(item)
-        api_path = '{}/{}/attributes/{}'.format(item_api_base, item[item_id_key], attribute_id)
+        item_api_base, item_id_key = get_api_details(tcex_json_item)
+        api_path = '{}/{}/attributes/{}'.format(item_api_base, tcex_json_item[item_id_key], attribute_id)
         results = self._make_api_request('DELETE', api_path)
         return results
 
