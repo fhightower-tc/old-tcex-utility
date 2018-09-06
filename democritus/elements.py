@@ -17,7 +17,7 @@ import uuid
 
 from tcex import TcEx
 
-from .utility import get_api_details, standardize_item_type, is_group, is_indicator, get_api_base_from_type, get_type_from_weblink, GROUP_ABBREVIATIONS, INDICATOR_ABBREVIATIONS, INDICATOR_BASE_TEMPLATES
+from .utility import get_api_details, standardize_item_type, is_group, is_indicator, get_api_base_from_type, get_type_from_weblink, get_indicator_json_key_for_indicator_id, GROUP_ABBREVIATIONS, INDICATOR_ABBREVIATIONS, INDICATOR_BASE_TEMPLATES
 
 API_VERSION = 'v2'
 
@@ -412,6 +412,9 @@ class Elements(object):
         elif indicator_type == 'Url':
             return base_indicator.format(host_base)
 
+    def delete_indicator(self, indicator_type, indicator_summary):
+        self._make_api_request('DELETE', '{}/{}'.format(get_api_base_from_type(indicator_type), indicator_summary))
+
     #
     # ASSOCIATIONS
     #
@@ -613,6 +616,8 @@ class Elements(object):
                 item_id = urllib.parse.quote_plus(item_id.encode('utf-8'))
             results = self._make_api_request('GET', '{}/{}'.format(base_api_path, item_id), include_attributes=include_attributes, include_tags=include_tags)
             item = results.get(standardize_item_type(item_type))
+            item['type'] = standardize_item_type(item_type)
+            item['name'] = item[get_indicator_json_key_for_indicator_id(item_type)]
 
             if include_file_occurrences and standardize_item_type(item_type) == 'file':
                 fileOccurrences = self._make_api_request('GET', '{}/{}/fileOccurrences'.format(base_api_path, item_id))

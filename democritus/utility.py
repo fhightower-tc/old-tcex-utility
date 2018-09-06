@@ -89,11 +89,11 @@ def standardize_item_type(item_type):
 
 def get_indicator_json_key_for_indicator_id(indicator_type):
     """Return the key which provides the indicator's id for the given indicator type."""
-    if isinstance(INDICATOR_TYPE_TO_ID_KEY[indicator_type], list):
+    if isinstance(INDICATOR_TYPE_TO_ID_KEY[standardize_item_type(indicator_type)], list):
         # TODO: this code is not correct. Not sure what is going on and how it is used, but it isn't correct
         return INDICATOR_TYPE_TO_ID_KEY[indicator_type]
     else:
-        return [INDICATOR_TYPE_TO_ID_KEY[indicator_type]]
+        return [INDICATOR_TYPE_TO_ID_KEY[standardize_item_type(indicator_type)]]
 
 
 def get_api_base_from_type(item_type):

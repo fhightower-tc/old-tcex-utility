@@ -246,3 +246,13 @@ def test_group_deduplication():
     e.process(dont_create_duplicate_groups=True)
     new_threat_count = len(e.get_items_by_type('threat'))
     assert new_threat_count == original_threat_count
+
+
+def test_indicator_deletion():
+    e = Elements(owner=OWNER)
+    e.create_indicator('Address', '5.4.33.2')
+    e.process()
+    assert len(e.get_item('Address', '5.4.33.2')) > 0
+    print("e.get_item('Address', '5.4.33.2') {}".format(e.get_item('Address', '5.4.33.2')))
+    e.delete_indicator('Address', '5.4.33.2')
+    assert len(e.get_item('Address', '5.4.33.2')) == 0
