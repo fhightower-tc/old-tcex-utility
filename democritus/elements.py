@@ -541,6 +541,13 @@ class Elements(object):
         return results
 
     #
+    # PUBLICATION
+    #
+
+    def publish_group(self, group_type, group_id):
+        self._make_api_request('POST', '{}/{}/publish'.format(get_api_base_from_type(group_type), group_id))
+
+    #
     # GENERIC RETRIEVAL
     #
 
@@ -612,12 +619,12 @@ class Elements(object):
                 item['fileOccurrences'] = fileOccurrences['fileOccurrence']
 
             if include_associations:
-                item['associations'] = list()
+                item['associations'] = dict()
 
                 group_associations = self._make_api_request('GET', '{}/{}/groups/'.format(base_api_path, item_id))['group']
-                item['associations'].extend(group_associations)
+                item['associations']['groups'] = group_associations
 
                 indicator_associations = self._make_api_request('GET', '{}/{}/indicators/'.format(base_api_path, item_id))['indicator']
-                item['associations'].extend(indicator_associations)
+                item['associations']['indicators'] = indicator_associations
 
             return item
