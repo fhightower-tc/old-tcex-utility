@@ -87,13 +87,23 @@ def standardize_item_type(item_type):
         return inflect.engine().singular_noun(ITEM_TYPE_TO_API_BRANCH[item_type.lower()].split('/')[-1])
 
 
-def get_indicator_json_key_for_indicator_id(indicator_type):
-    """Return the key which provides the indicator's id for the given indicator type."""
+def _get_indicator_id_keys(indicator_type):
+    """Return the keys which provide the indicator's id for the given indicator type."""
     if isinstance(INDICATOR_TYPE_TO_ID_KEY[standardize_item_type(indicator_type)], list):
-        # TODO: this code is not correct. Not sure what is going on and how it is used, but it isn't correct
         return INDICATOR_TYPE_TO_ID_KEY[indicator_type]
     else:
         return [INDICATOR_TYPE_TO_ID_KEY[standardize_item_type(indicator_type)]]
+
+
+def get_indicator_id_key(indicator_json):
+    """Return the key which provides the indicator's id for the given indicator type."""
+    item_id_key = None
+    item_id_keys = _get_indicator_id_keys(indicator_json['type'])
+    for key in item_id_keys:
+        if indicator_json.get(key):
+            item_id_key = key
+            break
+    return item_id_key
 
 
 def get_api_base_from_type(item_type):
@@ -101,6 +111,7 @@ def get_api_base_from_type(item_type):
     return ITEM_TYPE_TO_API_BRANCH[standardize_item_type(item_type)]
 
 
+# TODO: can this function and all references to it be removed?
 def get_type_from_weblink(weblink):
     """Get the item's type from a weblink."""
     pattern = '\/([a-z]*)\.xhtml'
@@ -108,27 +119,22 @@ def get_type_from_weblink(weblink):
     return matches[0]
 
 
-# TODO: I think this function can be removed and all references of it changed to use the get_api_base_from_type or get_type_from_weblink functions
+# TODO: split this function up to only do one thing (return the base API path). The key which provides the item's id can be found using the `get_indicator_id_key` function
 def get_api_details(item):
     """Return the base API path and the key which provides the item's id."""
     item_api_base = str()
     item_id_key = str()
-    item_type = get_type_from_weblink(item['webLink'])
 
-    if is_group(item_type):
-        item_api_base = get_api_base_from_type(item_type)
+    if is_group(item['type']):
+        item_api_base = get_api_base_from_type(item['type'])
         item_id_key = 'id'
-    elif is_indicator(item_type):
-        item_api_base = get_api_base_from_type(item_type)
-        item_id_keys = get_indicator_json_key_for_indicator_id(item_type)
-        for key in item_id_keys:
-            if item.get(key):
-                item_id_key = key
-                break
-    elif standardize_item_type(item_type) == 'victim':
-        item_api_base = get_api_base_from_type(item_type)
+    elif is_indicator(item['type']):
+        item_api_base = get_api_base_from_type(item['type'])
+        item_id_key = get_indicator_id_key(item)
+    elif standardize_item_type(item['type']) == 'victim':
+        item_api_base = get_api_base_from_type(item['type'])
         item_id_key = 'id'
     else:
-        print('Unable to identify the type "{}"'.format(item_type))
+        print('Unable to identify the type "{}"'.format(item['type']))
 
     return item_api_base, item_id_key

@@ -17,7 +17,7 @@ import uuid
 
 from tcex import TcEx
 
-from .utility import get_api_details, standardize_item_type, is_group, is_indicator, get_api_base_from_type, get_type_from_weblink, get_indicator_json_key_for_indicator_id, GROUP_ABBREVIATIONS, INDICATOR_ABBREVIATIONS, INDICATOR_BASE_TEMPLATES
+from .utility import get_api_details, standardize_item_type, is_group, is_indicator, get_api_base_from_type, get_type_from_weblink, get_indicator_id_key, GROUP_ABBREVIATIONS, INDICATOR_ABBREVIATIONS, INDICATOR_BASE_TEMPLATES
 
 API_VERSION = 'v2'
 
@@ -281,6 +281,8 @@ class Elements(object):
                     del victim['tags']
                 # create the victim
                 response = self._make_api_request('POST', 'victims', victim)
+                # this is necessary to add attributes and tags
+                response['victim']['type'] = 'Victim'
                 # add attributes to the victim
                 if attributes is not None:
                     self.add_attributes([response['victim']], attributes)
@@ -305,7 +307,7 @@ class Elements(object):
     # GROUPS
     #
 
-    def create_group(self, group_type, group_name):
+    def create_group(self, group_type, group_name=None):
         """Create a group."""
         group_data = self.create_group_data(group_type, group_name)
         group_data = self._check_for_default_metdata(group_type, group_data)
@@ -326,7 +328,7 @@ class Elements(object):
         for group_json in groups_json:
             self.create_group_from_tcex_json(group_json)
 
-    def create_group_data(self, group_type, group_name=''):
+    def create_group_data(self, group_type, group_name):
         # if no group name is given, create one with a uuid
         if group_name == '' or group_name is None:
             group_name = 'Test {} {}'.format(group_type, str(uuid.uuid4()).split('-')[0])
@@ -589,7 +591,7 @@ class Elements(object):
                     items.extend(self.get_items_by_type(group_type, include_attributes=include_attributes, include_tags=include_tags))
                 return items
             else:
-                item_api_base, item_id_key = get_api_details({'webLink': '/{}.xhtml'.format(item_type)})
+                item_api_base, item_id_key = get_api_details({'type': item_type})
                 results = self._make_api_request('GET', item_api_base, include_attributes=include_attributes, include_tags=include_tags)
                 items = results.get(standardize_item_type(item_type))
                 # record the type of the item
@@ -617,7 +619,7 @@ class Elements(object):
             results = self._make_api_request('GET', '{}/{}'.format(base_api_path, item_id), include_attributes=include_attributes, include_tags=include_tags)
             item = results.get(standardize_item_type(item_type))
             item['type'] = standardize_item_type(item_type)
-            item['name'] = item[get_indicator_json_key_for_indicator_id(item_type)]
+            item['name'] = item[get_indicator_id_key(item)]
 
             if include_file_occurrences and standardize_item_type(item_type) == 'file':
                 fileOccurrences = self._make_api_request('GET', '{}/{}/fileOccurrences'.format(base_api_path, item_id))

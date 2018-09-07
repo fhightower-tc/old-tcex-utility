@@ -118,7 +118,7 @@ def test_create_from_tcex_json():
 
 def test_create_from_tcex_json_2():
     e = Elements(OWNER)
-    new_address = e.create_test_indicator('Address')
+    new_address = e.create_indicator('Address')['name']
     tcex_json = {
         'groups': [],
         'indicators': [{
@@ -138,7 +138,7 @@ def test_create_from_tcex_json_2():
 output_json_with_victims = {
     'victims': [
         {
-            'name': 'Test victim',
+            'name': 'Test victim 123',
         }
     ],
     'groups': [],
@@ -154,13 +154,13 @@ output_json_with_victims = {
 def test_create_victims():
     e = Elements(OWNER)
     e.create_from_tcex_json(output_json_with_victims)
-    assert 'Test victim' in [entry['name'] for entry in e.get_items_by_type('Victim')]
+    assert output_json_with_victims['victims'][0]['name'] in [entry['name'] for entry in e.get_items_by_type('Victim')]
 
 
 output_json_with_victims_and_metadata = {
     'victims': [
         {
-            'name': 'Test victim',
+            'name': 'Test victim 456',
             'attributes': [{
                 'type': 'Description',
                 'value': 'Test descript'
@@ -181,10 +181,9 @@ def test_create_victims_with_metadata():
     e = Elements(OWNER)
     e.create_from_tcex_json(output_json_with_victims_and_metadata)
     victims = e.get_items_by_type('Victim', include_attributes=True, include_tags=True)
-    print("victims {}".format(victims))
-    assert len(victims) == 1
-    assert len(victims[0]['attributes']) == 1
-    assert len(victims[0]['tags']) == 2
+    newly_created_victim = [victim for victim in victims if victim['name'] == output_json_with_victims_and_metadata['victims'][0]['name']][0]
+    assert len(newly_created_victim['attribute']) == 1
+    assert len(newly_created_victim['tag']) == 2
 
 
 # TODO: implement this functionality:

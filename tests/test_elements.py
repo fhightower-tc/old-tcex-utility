@@ -4,6 +4,7 @@
 import time
 
 from democritus.elements import Elements
+from democritus.molecules import Molecules
 
 OWNER = 'Research Labs'
 
@@ -224,12 +225,13 @@ def test_logging():
         assert 'Failed adding indicator https://HIGHTOWER.space type URL' in text
 
 
+# TODO: the test below is not working yet b/c the ability to retrieve associations when using `get_items_by_type` has not been implemented yet
 def test_get_associations():
-    e = Elements(owner=OWNER)
-    e.create_from_symbolic_pattern('inc-file', 2)
-    e.process()
+    m = Molecules(owner=OWNER)
+    m.create_from_symbolic_pattern('inc-file', 2)
+    m.process()
 
-    incidents = e.get_items_by_type('incidents', include_associations=True)
+    incidents = m.get_items_by_type('incidents', include_associations=True)
     assert len(incidents[-1]['associations']) == 1
     assert len(incidents[-2]['associations']) == 1
 

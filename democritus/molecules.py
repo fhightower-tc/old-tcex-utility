@@ -4,7 +4,7 @@
 from datetime import datetime
 
 from .elements import Elements
-from .utility import get_type_from_weblink
+from .utility import get_type_from_weblink, GROUP_ABBREVIATIONS, INDICATOR_ABBREVIATIONS
 
 
 class Molecules(Elements):
@@ -242,7 +242,8 @@ class Molecules(Elements):
             created_objects = list()
             for obj in objects:
                 if obj in GROUP_ABBREVIATIONS:
-                    created_objects.append(self.create_test_group(GROUP_ABBREVIATIONS[obj].title()))
+                    # TODO: this shouldn't have to be `.title()`
+                    created_objects.append(self.create_group(GROUP_ABBREVIATIONS[obj].title()))
                 elif obj in INDICATOR_ABBREVIATIONS:
                     created_objects.append(self.create_indicator(INDICATOR_ABBREVIATIONS[obj].title()))
 

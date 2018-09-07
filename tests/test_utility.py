@@ -34,9 +34,23 @@ def test_standardize_item_type():
 
 
 @pytest.mark.noAPI
-def test_get_indicator_json_key_for_indicator_id_for_address():
-    assert utility.get_indicator_json_key_for_indicator_id('address') == ['ip']
-    assert utility.get_indicator_json_key_for_indicator_id(['address']) == ['ip']
+def test_get_indicator_id_keys():
+    assert utility._get_indicator_id_keys('address') == ['ip']
+
+
+@pytest.mark.noAPI
+def test_get_indicator_id_key():
+    assert utility.get_indicator_id_key({
+        'ip': '1.2.3.4',
+        'type': 'Address'
+    }) == 'ip'
+
+    assert utility.get_indicator_id_key({
+        'md5': 'a'*32,
+        'sha1': 'b'*40,
+        'sha256': 'c'*64,
+        'type': 'file'
+    }) == 'md5'
 
 
 @pytest.mark.noAPI
