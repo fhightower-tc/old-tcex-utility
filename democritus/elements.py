@@ -549,8 +549,11 @@ class Elements(object):
     # PUBLICATION
     #
 
-    def publish_group(self, group_type, group_id):
-        self._make_api_request('POST', '{}/{}/publish'.format(get_api_base_from_type(group_type), group_id))
+    def publish_group(self, group_type, group_id, security_label_list=[], exclude_unlabeled=False):
+        self._make_api_request('POST', '{}/{}/publish'.format(get_api_base_from_type(group_type), group_id), {
+            "securityLabelList": security_label_list,
+            "excludeUnlabeled": exclude_unlabeled
+        })
 
     #
     # GENERIC RETRIEVAL
