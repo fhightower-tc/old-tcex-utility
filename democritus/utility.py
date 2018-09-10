@@ -17,7 +17,7 @@ ITEM_TYPE_TO_API_BRANCH = {
     # there are two entries for cidr ranges to handle the various nomenclatures used to describe cidr ranges from different packages
     'cidr': 'indicators/cidrBlocks',
     'cidrBlock': 'indicators/cidrBlocks',
-    'emailaddress': 'indicators/emailAddresses',
+    'emailAddress': 'indicators/emailAddresses',
     'file': 'indicators/files',
     'host': 'indicators/hosts',
     'url': 'indicators/urls',
@@ -82,17 +82,17 @@ def is_indicator(item_type):
 def standardize_item_type(item_type):
     # TODO: figure out a better way to handle this
     if item_type.lower() == 'emailaddress':
-        return 'emailaddress'
+        return 'emailAddress'
     else:
         return inflect.engine().singular_noun(ITEM_TYPE_TO_API_BRANCH[item_type.lower()].split('/')[-1])
 
 
 def _get_indicator_id_keys(indicator_type):
     """Return the keys which provide the indicator's id for the given indicator type."""
-    if isinstance(INDICATOR_TYPE_TO_ID_KEY[standardize_item_type(indicator_type)], list):
+    if isinstance(INDICATOR_TYPE_TO_ID_KEY[standardize_item_type(indicator_type).lower()], list):
         return INDICATOR_TYPE_TO_ID_KEY[indicator_type]
     else:
-        return [INDICATOR_TYPE_TO_ID_KEY[standardize_item_type(indicator_type)]]
+        return [INDICATOR_TYPE_TO_ID_KEY[standardize_item_type(indicator_type).lower()]]
 
 
 def get_indicator_id_key(indicator_json):
