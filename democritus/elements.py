@@ -618,6 +618,10 @@ class Elements(object):
         else:
             base_api_path = get_api_base_from_type(item_type)
             if isinstance(item_id, str):
+                if item_type.lower() == 'file':
+                    self.tcex.log.debug("item_type.lower() {}".format(item_type.lower()))
+                    item_id = item_id.split(':')[0].strip()
+                    self.tcex.log.debug("item_id {}".format(item_id))
                 item_id = urllib.parse.quote_plus(item_id.encode('utf-8'))
             results = self._make_api_request('GET', '{}/{}'.format(base_api_path, item_id), include_attributes=include_attributes, include_tags=include_tags)
             item = results.get(standardize_item_type(item_type))
