@@ -415,6 +415,11 @@ class Elements(object):
             return base_indicator.format(host_base)
 
     def delete_indicator(self, indicator_type, indicator_summary):
+        # TODO: make a separate function to do this:
+        if indicator_type.lower() == 'file':
+            indicator_summary = indicator_summary.split(':')[0].strip()
+        elif indicator_type.lower() == 'url':
+            indicator_summary = urllib.parse.quote_plus(indicator_summary.encode('utf-8'))
         self._make_api_request('DELETE', '{}/{}'.format(get_api_base_from_type(indicator_type), indicator_summary))
 
     #
