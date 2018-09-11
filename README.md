@@ -113,6 +113,13 @@ m.process()
 
 For more examples, refer to the `tests/` directory.
 
+## Developer's Documentation
+
+### Adding New Indicator Type
+
+- Add entry for new indicator type to `utility.py:ITEM_TYPE_TO_API_BRANCH`
+- Add entry for new indicator type to `utility.py:INDICATOR_TYPE_TO_ID_KEY`
+
 ## Credits
 
 This package was created with [Cookiecutter](https://github.com/audreyr/cookiecutter) and fhightower's [Python project template](https://gitlab.com/fhightower-templates/python-project-template).

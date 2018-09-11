@@ -14,6 +14,7 @@ INDICATOR_BASE_TEMPLATES = {
 
 ITEM_TYPE_TO_API_BRANCH = {
     'address': 'indicators/addresses',
+    'asn': 'indicators/asns',
     # there are two entries for cidr ranges to handle the various nomenclatures used to describe cidr ranges from different packages
     'cidr': 'indicators/cidrBlocks',
     'cidrBlock': 'indicators/cidrBlocks',
@@ -44,6 +45,7 @@ INDICATOR_WEBLINK_CLASSIFIER = {
 
 INDICATOR_TYPE_TO_ID_KEY = {
     'address': 'ip',
+    'asn': ['asn', 'AS Number'],
     'cidrblock': 'cidrBlock',
     'emailaddress': 'address',
     'file': ['md5', 'sha1', 'sha256'],
