@@ -150,7 +150,6 @@ output_json_with_victims = {
 }
 
 
-@pytest.mark.noAPI
 def test_create_victims():
     e = Elements(OWNER)
     e.create_from_tcex_json(output_json_with_victims)

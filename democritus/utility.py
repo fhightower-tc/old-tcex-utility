@@ -65,7 +65,7 @@ GROUP_ABBREVIATIONS = {
 
 INDICATOR_ABBREVIATIONS = {
     'add': 'address',
-    'emadd': 'emailaddress',
+    'emadd': 'emailAddress',
     'file': 'file',
     'host': 'host',
     'url': 'url'
