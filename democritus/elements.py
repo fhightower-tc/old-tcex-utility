@@ -575,10 +575,13 @@ class Elements(object):
             item_data = self.tcex.resource(item_type)
             item_data.owner = self.owner
             # paginate over results
-            for item in item_data:
-                # record the type of the item
-                item['data'][0]['type'] = get_type_from_weblink(item['data'][0]['webLink'])
-                items.extend(item['data'])
+            for entry in item_data:
+                for item in entry['data']:
+                    # record the type of the item
+                    item['type'] = get_type_from_weblink(item['webLink'])
+                    # record the indicator itself to the standardized key: 'name'
+                    item['name'] = item[get_indicator_id_key(item)]
+                    items.append(item)
             return items
         # if we want to get attributes and/or tags, make an API request
         else:
