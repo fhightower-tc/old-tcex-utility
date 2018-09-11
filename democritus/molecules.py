@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Relatively complex functions (known as 'Molecules') performed using the underlying 'Elements'."""
+
 from datetime import datetime
+import re
+
+
 
 from .elements import Elements
 from .utility import get_type_from_weblink, GROUP_ABBREVIATIONS, INDICATOR_ABBREVIATIONS
@@ -54,6 +58,17 @@ class Molecules(Elements):
                 if item_tag in [tag['name'] for tag in result['tag']]:
                     items.append(result)
         return items
+
+    def get_items_matching_pattern(self, pattern, item_type=None):
+        """Find all items which match the given pattern."""
+        results = self.get_items_by_type(item_type=item_type)
+        matching_items = list()
+
+        for result in results:
+            print("result {}".format(result))
+            if re.match(pattern, result['name']):
+                matching_items.append(result)
+        return matching_items
 
     #
     # ADD ATTRIBUTES
