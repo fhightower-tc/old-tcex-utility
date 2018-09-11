@@ -17,6 +17,9 @@ ITEM_TYPE_TO_API_BRANCH = {
     # there are two entries for cidr ranges to handle the various nomenclatures used to describe cidr ranges from different packages
     'cidr': 'indicators/cidrBlocks',
     'cidrBlock': 'indicators/cidrBlocks',
+    'userAgent': 'indicators/userAgents',
+    'useragent': 'indicators/userAgents',
+    'emailaddress': 'indicators/emailAddresses',
     'emailAddress': 'indicators/emailAddresses',
     'file': 'indicators/files',
     'host': 'indicators/hosts',
@@ -45,7 +48,9 @@ INDICATOR_TYPE_TO_ID_KEY = {
     'emailaddress': 'address',
     'file': ['md5', 'sha1', 'sha256'],
     'host': 'hostName',
-    'url': 'text'
+    'url': 'text',
+    # this is necessary to handle both the name of the entity returned from the API and the key of the actual indicator value (which is 'User Agent String')
+    'useragent': ['userAgent', 'User Agent String'],
 }
 
 GROUP_ABBREVIATIONS = {
@@ -80,17 +85,14 @@ def is_indicator(item_type):
 
 
 def standardize_item_type(item_type):
-    # TODO: figure out a better way to handle this
-    if item_type.lower() == 'emailaddress':
-        return 'emailAddress'
-    else:
-        return inflect.engine().singular_noun(ITEM_TYPE_TO_API_BRANCH[item_type.lower()].split('/')[-1])
+    item_type = item_type.replace(' ', '')
+    return inflect.engine().singular_noun(ITEM_TYPE_TO_API_BRANCH[item_type.lower()].split('/')[-1])
 
 
 def _get_indicator_id_keys(indicator_type):
     """Return the keys which provide the indicator's id for the given indicator type."""
     if isinstance(INDICATOR_TYPE_TO_ID_KEY[standardize_item_type(indicator_type).lower()], list):
-        return INDICATOR_TYPE_TO_ID_KEY[indicator_type]
+        return INDICATOR_TYPE_TO_ID_KEY[standardize_item_type(indicator_type).lower()]
     else:
         return [INDICATOR_TYPE_TO_ID_KEY[standardize_item_type(indicator_type).lower()]]
 
