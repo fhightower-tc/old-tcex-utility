@@ -268,3 +268,14 @@ class Molecules(Elements):
                     self.create_association(created_objects[i], created_objects[i + 1])
                     if associations[i] == '=':
                         self.create_association(created_objects[i], created_objects[i + 2])
+
+    def inds_associated_with_group(self, group_type, group_identifier):
+        """Find all indicators associated with the given group."""
+        # handle the group_identifier as a group id
+        if isinstance(group_identifier, int):
+            indicators = self.get_item(group_type, group_identifier, include_associations=True)['associations']['indicators']
+        # handle the group_identifier as a group name
+        elif isinstance(group_identifier, str):
+            # TODO: add handling for getting an item of a type by name
+            pass
+        return indicators

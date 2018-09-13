@@ -634,7 +634,8 @@ class Elements(object):
             results = self._make_api_request('GET', '{}/{}'.format(base_api_path, item_id), include_attributes=include_attributes, include_tags=include_tags)
             item = results.get(standardize_item_type(item_type))
             item['type'] = standardize_item_type(item_type)
-            item['name'] = item[get_indicator_id_key(item)]
+            if is_indicator(item['type']):
+                item['name'] = item[get_indicator_id_key(item)]
 
             if include_file_occurrences and standardize_item_type(item_type) == 'file':
                 fileOccurrences = self._make_api_request('GET', '{}/{}/fileOccurrences'.format(base_api_path, item_id))
