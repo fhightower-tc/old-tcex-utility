@@ -17,6 +17,7 @@ ITEM_TYPE_TO_API_BRANCH = {
     'asn': 'indicators/asns',
     # there are two entries for cidr ranges to handle the various nomenclatures used to describe cidr ranges from different packages
     'cidr': 'indicators/cidrBlocks',
+    'cidrblock': 'indicators/cidrBlocks',
     'cidrBlock': 'indicators/cidrBlocks',
     'userAgent': 'indicators/userAgents',
     'useragent': 'indicators/userAgents',

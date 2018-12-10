@@ -258,3 +258,28 @@ def test_indicator_deletion():
     print("e.get_item('Address', '5.4.33.2') {}".format(e.get_item('Address', '5.4.33.2')))
     e.delete_indicator('Address', '5.4.33.2')
     assert len(e.get_item('Address', '5.4.33.2')) == 0
+
+
+def test_attribute_deduplication_cidr():
+    # this function assumes there is a cidr range indicator ('1.2.3.4/20') with a description attribute with a value of 'Test'
+    e = Elements(owner=OWNER)
+    e.create_from_tcex_json({
+        'indicators': [{
+          "attribute": [
+            {
+              "type": "Description",
+              "value": "Test"
+            }
+          ],
+          "confidence": 5,
+          "rating": "3",
+          "summary": "1.2.3.4/20",
+          "type": "CIDR"
+        }]
+    })
+    e.process()
+
+    e = Elements(OWNER)
+    ind_json = e.get_item('CIDR', '1.2.3.4/20', include_attributes=True, include_file_occurrences=True)
+    print("ind_json {}".format(ind_json))
+    assert len(ind_json['attribute']) == 1
