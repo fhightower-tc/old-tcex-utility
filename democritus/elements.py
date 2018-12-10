@@ -35,7 +35,6 @@ class Elements(object):
         else:
             self.tcex = TcEx()
             self._authenticate()
-            self._set_logging()
         self.default_metadata = dict()
 
     #
@@ -65,21 +64,6 @@ class Elements(object):
         if self.owner is None:
             self.owner = api_default_org
 
-    def _set_logging(self):
-        # this will output the logs in stdout (handy when using a terminal)
-        self.tcex.log = self.tcex._logger(True)
-        # this will write logs into `./app.log`
-        if self.process_logs:
-            self.tcex.args.tc_log_level = 'warning'
-            self.tcex.args.tc_log_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "."))
-            self.tcex.args.tc_out_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "."))
-            self.tcex.args.tc_log_to_api = False
-            # this is necessary to reinitialize the logger after the parameter(s) was changed in the line(s) above
-            self.tcex.log = self.tcex._logger(False)
-            # this is a hack to clear the current log because I can't easily change the mode of the logger used by tcex
-            with open(self.tcex.log.handlers[-1].baseFilename, 'w') as f:
-                f.write('')
-
     def add_default_metadata(self, object_type, metadata):
         """Add metadata which will be added to all objects of the given type."""
         object_type = standardize_item_type(object_type)
@@ -87,7 +71,6 @@ class Elements(object):
             self.default_metadata[object_type] = metadata
         else:
             raise ValueError('The object type "{}" is neither a group nor an indicator. Please make sure the object type you provided is correct'.format(object_type))
-
 
     def _check_for_default_metdata(self, object_type, object_data):
         """See if there is metadata for objects of the given type and if so, add it to the object's data."""
@@ -490,7 +473,7 @@ class Elements(object):
     def _add_attributes(self, item_api_base, item_id, attributes_list):
         """Add the attributes to the given item."""
         for attribute in attributes_list:
-            self._make_api_request('POST', '{}/{}/attributes'.format(item_api_base, item_id), attribute)
+            self._make_api_request('POST', '{}/{}/attributes'.format(item_api_base, urllib.parse.quote_plus(item_id)), attribute)
 
     def delete_attributes(self, tcex_json_item, attribute_id):
         item_api_base, item_id_key = get_api_details(tcex_json_item)
